@@ -31,8 +31,8 @@ tests and [Examples](Examples) folder in this repository.
 
     $ git clone https://github.com/ronnieholm/Monkey-Python.git
     $ cd Monkey-Python
-    $ python3 -m venv live
-    $ source live/bin/activate
+    $ python3 -m venv venv
+    $ source venv/bin/activate
     $ pip install -r requirements.txt
     $ mypy *.py
     $ python3 -m unittest *test.py
@@ -41,7 +41,7 @@ tests and [Examples](Examples) folder in this repository.
     $ deactivate
 
 <!--
-Creating requirements.txt
+Creating requirements.txt after creating venv above
 pip install mypy
 pip freeze > requirements.txt
 -->
@@ -62,3 +62,4 @@ pip freeze > requirements.txt
 - [GoAwk](https://github.com/benhoyt/goawk) implements the relatively simple Awk language.
 - [Get Productive with Python in Visual Studio Code (including Docker integration) from VSCode](https://www.youtube.com/watch?v=6YLMWU-5H9o), Dan Taylor.
 - [Visual Studio Code (Windows) - Setting up a Python Development Environment and Complete Overview](https://www.youtube.com/watch?v=-nh9rCzPJ20), Corey Schafer.
+- [Python Tutorial: VENV (Windows) - How to Use Virtual Environments with the Built-In venv Module](https://www.youtube.com/watch?v=APOPm01BVrk), Corey Schafer.
