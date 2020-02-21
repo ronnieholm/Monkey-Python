@@ -37,7 +37,7 @@ tests and [Examples](Examples) folder in this repository.
     $ mypy *.py
     $ python3 -m unittest *test.py
     $ python3 main.py
-    $ python3 main.py examples/functional-programming.monkey
+    $ python3 main.py examples/fibonacci.monkey
     $ deactivate
 
 <!--
