@@ -5,10 +5,13 @@ from lexer import Token
 class Node(ABC):
     @abstractclassmethod
     def token_literal(self) -> Optional[str]:
+        # For debugging and testing.
         raise NotImplementedError
 
     @abstractclassmethod
     def string(self) -> str:
+        # We don't override __str__ or __repr__ because we want to make string
+        # calls explicit.
         raise NotImplementedError
 
 class Statement(Node):
@@ -32,7 +35,7 @@ class Program(Statement):
     def string(self) -> str:
         out = ""
         for s in self.statements:
-            out += s.string() # TODO: how to avoid reallocing memory and write into a buffer?
+            out += s.string()
         return out
 
 class Identifier(Expression):
@@ -114,6 +117,9 @@ class PrefixExpression(Expression):
 class InfixExpression(Expression):
     def __init__(self, token:Token, left: Expression, operator: str, right: Expression):
         self.token = token
+
+        # Object being accessed is an expression as it can be an identifier, an
+        # array literal, or a function call.
         self.left = left
         self.operator = operator
         self.right = right

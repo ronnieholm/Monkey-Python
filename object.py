@@ -5,6 +5,8 @@ from typing import List, Dict, Optional, Type, NewType, Callable, Any
 import hashlib
 from collections import namedtuple
 
+# TODO: Move environment to seperate file
+
 # Environment is inside object or it would resulting in a circular dependency
 # with Object referencing Environment and Environment refering Object modules.
 # We still have a typing issue in that Object and Environment reference each
@@ -29,6 +31,10 @@ class Environment:
         if ok:
             obj = self._store[name]
         elif self.outer != None:
+            # If current environment doesn't have a value associated with a
+            # name, we recursively call get on enclosing environment (which the
+            # current environment is extending) until either name is found or
+            # caller can issue a "unknown identifier" error.
             obj, ok = self.outer.get(name)
         return obj, ok
 
@@ -39,7 +45,14 @@ class Environment:
 ObjectType = str
 
 @unique
-class Type_(Enum): # TODO: Rename to ObjectType? and remove the _OBJ ending. Could probably use auto to assign value as its redundant anyway
+class Type_(Enum): # TODO: Rename to ObjectType and remove the _OBJ ending. Could probably use auto to assign value as its redundant anyway
+    # Within each Object derived class, we could use type() to get at its Python
+    # type for comparison, thereby getting rid of type_ on each derived class.
+    # Relying on type() would render this enum redundant. Monkey error messages,
+    # however, include members of this enum in error messages. Relying on
+    # type(), details of the underlying implementation would leak into user
+    # error messages. Hence we keep the Monkey types and Python types types
+    # separate.
     INTEGER_OBJ = "INTEGER"
     BOOLEAN_OBJ = "BOOLEAN"
     NULL_OBJ = "NULL"
@@ -51,11 +64,9 @@ class Type_(Enum): # TODO: Rename to ObjectType? and remove the _OBJ ending. Cou
     ARRAY_OBJ = "ARRAY"
     HASH_OBJ = "HASH"
 
-# Classes in Python have reference semantics which makes comparing hash key
-# different. One instance of HashKey cannot easily be compared for equality with
-# another. namedtyple on the other hand has value sematics.
-# //type: Type_, value: int
-HashKey = namedtuple("HashKey", ["type", "value"])
+# Classes in Python have reference semantics which makes any two HashKeys
+# different. namedtyple on the other hand has value sematics. 
+HashKey = namedtuple("HashKey", ["type", "value"]) # // TODO: type: Type_, value: int
 
 # TODO: How to force runtime error if method is not implemented? It currently ignored
 class Hashable:
@@ -121,6 +132,9 @@ class Boolean(Object, Hashable):
             value = 0
         return HashKey(self.type_(), value)
 
+
+# Null is a type like Integer and Boolean except it doesn't wrap a value. It
+# represents the absence of a value.
 class Null(Object):
     def type_(self) -> Type_:
         return Type_.NULL_OBJ
@@ -128,6 +142,8 @@ class Null(Object):
     def inspect(self) -> str:
         return "null"
 
+# TODO: Rename to ReturnValue
+# ReturnValue is a wrapper around another Monkey object.
 class Return_value(Object):
     def __init__(self, value: Object):     
         self.value = value
@@ -142,6 +158,8 @@ class Return_value(Object):
         assert(not isinstance(self, Return_value))
         return self.value.inspect()
 
+# Error wraps a string error message. In a production language, we'd want to
+# attach stack trace and line and column numbers to such error object.
 class Error(Object):
     def __init__(self, message: str):
         self.message = message
@@ -156,6 +174,10 @@ class Function(Object):
     def __init__(self, parameters: List[ast.Identifier], body: ast.BlockStatement, env: Environment):
         self.parameters = parameters
         self.body = body
+
+        # Functions carry their own environment. This allows for
+        # closures to "close over" the environment they're defined in and
+        # allows the function to later access values within the closure.        
         self.env = env
 
     def type_(self) -> Type_:

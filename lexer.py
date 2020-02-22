@@ -4,10 +4,10 @@ from typing import Dict, Optional
 @unique
 class TokenType(Enum):
     ILLEGAL = "ILLEGAL" # Unknown token/character
-    EOF = "EOF"         # Signals parser to stop requesting tokens
+    EOF = "EOF"         # End of File stops parsing
 
     # Identifiers and literals
-    IDENT = "IDENT"   # add, foobar, x, y, ...
+    IDENT = "IDENT"   # add, foobar, x, y
     INT = "INT"       # 123
     STRING = "STRING" # "foo"
 
@@ -51,9 +51,9 @@ class Token:
 class Lexer:
     def __init__(self, input: str):
         self._input = input
-        self._position = 0       # current character position in input
-        self._read_position = 0  # next character position for lookahead
-        self._char: str = ""
+        self._position = 0       # Position in input where last character was read
+        self._read_position = 0  # Position in input where next character is read.
+        self._char: str = ""     # Character under examination.
         self._read_char()
 
     def next_token(self) -> Token:
@@ -95,12 +95,6 @@ class Lexer:
             if self._is_letter(self._char):
                 literal = self._read_identifier()
                 type_ = Lexer._lookup_ident(literal)
-
-                # Early return is necessary because when calling
-                # _read_identifier() it calls _read_character() repeatedly,
-                # advancing _read_position and _position past the last character
-                # of the current identifier. So no need to call next_token again
-                # after switching on character.
                 return Token(type_, literal)
             elif self._is_digit(self._char):
                 literal = self._read_number()
@@ -126,6 +120,10 @@ class Lexer:
 
     def _read_string(self) -> str:
         position = self._position + 1
+
+        # BUG: Passing a string which isn't " terminated causes an infinite loop
+        # because even though we reached the end of input, the " characters
+        # hasn't been reached.        
         while True:
             self._read_char()
             if self._char == '"':
@@ -156,7 +154,6 @@ class Lexer:
         else:
             return self._input[self._read_position]
 
-    # TODO: Move keyeowds and _lookup_ident to token.py?
     keywords: Dict[str, TokenType] = {
         "fn": TokenType.FUNCTION,
         "let": TokenType.LET,

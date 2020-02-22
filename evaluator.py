@@ -73,6 +73,8 @@ builtins: Dict[str, BuiltinFunction] = {
 }
 
 class Evaluator:
+    # As there's only ever a need for a single instance of each of these values,
+    # we optimize by pre-creating instances to return during evaluation.    
     null = object.Null()
     true = object.Boolean(True)
     false = object.Boolean(False)
@@ -90,6 +92,10 @@ class Evaluator:
             return self._eval_block_statement(node.statements, env)
         elif isinstance(node, ast.ReturnStatement):
             value = self.eval(node.return_value, env)
+
+            # Check for errors whenever Eval is called inside Eval in order to
+            # stop errors from being passed around and bubbling up far from
+            # their origin.            
             if self._is_error(value):
                 return value
             return object.Return_value(value)
@@ -151,7 +157,7 @@ class Evaluator:
         elif isinstance(node, ast.HashLiteral):
             return self._eval_hash_literal(node, env)
 
-        raise NotADirectoryError
+        raise NotImplementedError
 
     def _apply_function(self, fn: object.Object, args: List[object.Object]) -> object.Object:
         if isinstance(fn, object.Function):
@@ -170,6 +176,11 @@ class Evaluator:
         return env
 
     def _unwrap_return_value(self, obj: object.Object) -> object.Object:
+        # Unwrapping prevents a return statement from bubbling up through
+        # several functions and stopping evaluation in all of them. We only want
+        # to stop the evaluation of the last called function's body. Otherwise,
+        # _eval_block_statement would stop evaluating statements in outer
+        # functions.        
         if isinstance(obj, object.Return_value):
             return obj.value
         return obj
@@ -178,6 +189,12 @@ class Evaluator:
         result = None
         for s in stmts:
             result = self.eval(s, env)
+
+            # Prevents further evaluation if the result of the evaluation is a
+            # return statement. Note how we don't return ReturnValue directly,
+            # but unwrap its value. ReturnValue is an internal detail to allow
+            # Eval() to signal to its caller that it encountered and evaluated a
+            # return statement.            
             if isinstance(result, object.Return_value):
                 return result.value
             elif isinstance(result, object.Error):
@@ -188,14 +205,13 @@ class Evaluator:
         result = None
         for s in stmts:
             result = self.eval(s, env)
-            
-            # We explicitly don't unwrap Return_value but only check its type.
-            # In _eval_program, we check for type and unwrap. This enables us to
-            # handle return statements in branches of if statements, e.g.,
-            # inside the true block without evaluating the rest of the function
-            # containing the if statement.
             if result != None:
                 if isinstance(result, object.Return_value) or isinstance(result, object.Error):
+                    # Compared to _eval_program(), we don't unwrap the return
+                    # value. Instead when an ReturnValue is encountered as the
+                    # result of evaluating a statement, we return it to
+                    # _eval_program() for unwrapping. This halts outer block
+                    # evaluation and bubbles up the result.
                     return result
         return result
 
@@ -234,7 +250,12 @@ class Evaluator:
         if left.type_() == object.Type_.INTEGER_OBJ and right.type_() == object.Type_.INTEGER_OBJ:
             return self._eval_integer_infix_expression(operator, left, right)
         elif left.type_() == object.Type_.STRING_OBJ and right.type_() == object.Type_.STRING_OBJ:
-            return self._eval_string_infix_expression(operator, left, right)
+            return self._eval_string_infix_expression(operator, left, right)        
+        # For booleans we can use reference comparison to check for equality. It
+        # works because of our singleton True and False instances but wouldn't
+        # work for integers since they aren't singletons. 5 == 5 would be false
+        # when comparing references. To compare integer we must unwrap the
+        # integer stored inside each Integer object and compare their values.
         elif operator == "==":
             return self._native_bool_to_boolean_object(left == right)
         elif operator == "!=":
@@ -294,6 +315,10 @@ class Evaluator:
 
     def _eval_expressions(self, exprs: List[ast.Expression], env: object.Environment) -> List[object.Object]:
         result = []
+
+        # By definition arguments are evaluated left to right. Since the side
+        # effect of evaluating one argument might be relied on during evaluation
+        # of the next, defining an explicit evaluation order is important.
         for e in exprs:
             evaluated = self.eval(e, env)
             if self._is_error(evaluated):
@@ -312,6 +337,8 @@ class Evaluator:
         idx = index.value
         max = len(array.elements) - 1
         if idx < 0 or idx > max:
+            # Some languages throw an exception when the index is out of bounds.
+            # In Monkey by definition we return null as the result.
             return Evaluator.null
         return array.elements[idx]
 
