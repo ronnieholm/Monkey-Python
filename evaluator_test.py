@@ -6,9 +6,10 @@ import object
 from evaluator import Evaluator
 from typing import Type, Dict
 
+Case = namedtuple("Case", ["input", "expected"])
+
 class LexerTest(unittest.TestCase):
     def test_eval_integer_expression(self):
-        Case = namedtuple("Case", ["input", "expected"]) # TODO: type used in many tests so move it outside
         tests = [Case("5", 5),
                  Case("10", 10),
                  Case("-5", -5),
@@ -41,7 +42,6 @@ class LexerTest(unittest.TestCase):
         self.assertEqual(obj.value, expected)
 
     def test_eval_boolean_expression(self):
-        Case = namedtuple("Case", ["input", "expected"])
         tests = [Case("true", True),
                  Case("false", False),
                  Case("1 < 2", True),
@@ -70,7 +70,6 @@ class LexerTest(unittest.TestCase):
         self.assertEqual(obj.value, expected)
 
     def test_bang_operator(self):
-        Case = namedtuple("Case", ["input", "expected"])
         tests = [Case("!true", False),
                  Case("!false", True),
                  Case("!5", False),
@@ -82,7 +81,6 @@ class LexerTest(unittest.TestCase):
             self._test_boolean_object(evaluated, t.expected)
 
     def test_if_else_expression(self) -> None:
-        Case = namedtuple("Case", ["input", "expected"])
         tests = [Case("if (true) { 10 }", 10),
                  Case("if (false) { 10 }", None),
                  Case("if (1) { 10 }", 10),
@@ -99,7 +97,6 @@ class LexerTest(unittest.TestCase):
         self.assertEqual(obj, Evaluator.null)
 
     def test_return_statement(self) -> None:
-        Case = namedtuple("Case", ["input", "expected"])
         tests = [Case("return 10;", 10),
                  Case("return 10; 9;", 10),
                  Case("return 2 * 5; 9;", 10),
@@ -132,7 +129,6 @@ class LexerTest(unittest.TestCase):
             self._test_integer_object(evaluated, t.expected)
             
     def test_error_handling(self) -> None:
-        Case = namedtuple("Case", ["input", "expected_message"])
         tests = [
                  Case("5 + true;", "type mismatch: INTEGER + BOOLEAN"),
                  Case("5 + true; 5;", "type mismatch: INTEGER + BOOLEAN"),
@@ -152,10 +148,9 @@ class LexerTest(unittest.TestCase):
         for t in tests:
             evaluated = self._test_eval(t.input)
             self.assertIsInstance(evaluated, object.Error)
-            self.assertEqual(evaluated.message, t.expected_message)
+            self.assertEqual(evaluated.message, t.expected)
 
     def test_let_statements(self) -> None:
-        Case = namedtuple("Case", ["input", "expected"])
         tests = [Case("let a = 5; a;", 5),
                  Case("let a = 5 * 5; a;", 25),
                  Case("let a = 5; let b = a; b;", 5),
@@ -173,7 +168,6 @@ class LexerTest(unittest.TestCase):
         self.assertEqual(evaluated.body.string(), expected_body)
 
     def test_function_application(self) -> None:
-        Case = namedtuple("Case", ["input", "expected"])
         tests = [Case("let identity = fn(x) { x; }; identity(5);", 5),
                  Case("let identity = fn(x) { return x; }; identity(5);", 5),
                  Case("let double = fn(x) { x * 2; }; double(5);", 10),
@@ -204,7 +198,6 @@ class LexerTest(unittest.TestCase):
         self.assertEqual(evaluated.value, "Hello World!")
 
     def test_builtin_functions(self):
-        Case = namedtuple("Case", ["input", "expected"])
         tests = [Case('len("")', 0),
                  Case('len("four")', 4),
                  Case('len("hello world")', 11),
@@ -251,7 +244,6 @@ class LexerTest(unittest.TestCase):
         self._test_integer_object(evaluated.elements[2], 6)
 
     def test_array_index_expressions(self):
-        Case = namedtuple("Case", ["input", "expected"])
         tests = [Case("[1, 2, 3][0]", 1),
                  Case("[1, 2, 3][1]", 2),
                  Case("[1, 2, 3][2]", 3),
@@ -295,7 +287,6 @@ class LexerTest(unittest.TestCase):
             self._test_integer_object(pair.value, v)
 
     def test_hash_index_expressions(self):
-        Case = namedtuple("Case", ["input", "expected"])
         tests = [Case('{"foo": 5}["foo"]', 5),
                  Case('{"foo": 5}["bar"]', None),
                  Case('let key = "foo"; {"foo": 5}[key]', 5),

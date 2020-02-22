@@ -45,7 +45,7 @@ class Environment:
 ObjectType = str
 
 @unique
-class Type_(Enum): # TODO: Rename to ObjectType and remove the _OBJ ending. Could probably use auto to assign value as its redundant anyway
+class ObjectType(Enum):
     # Within each Object derived class, we could use type() to get at its Python
     # type for comparison, thereby getting rid of type_ on each derived class.
     # Relying on type() would render this enum redundant. Monkey error messages,
@@ -53,22 +53,22 @@ class Type_(Enum): # TODO: Rename to ObjectType and remove the _OBJ ending. Coul
     # type(), details of the underlying implementation would leak into user
     # error messages. Hence we keep the Monkey types and Python types types
     # separate.
-    INTEGER_OBJ = "INTEGER"
-    BOOLEAN_OBJ = "BOOLEAN"
-    NULL_OBJ = "NULL"
-    RETURN_VALUE_OBJ = "RETURN_VALUE"
-    ERROR_OBJ = "ERROR"
-    FUNCTION_OBJ = "FUNCTION"
-    STRING_OBJ = "STRING"
-    BUILTIN_OBJ = "BUILTIN"
-    ARRAY_OBJ = "ARRAY"
-    HASH_OBJ = "HASH"
+    INTEGER = "INTEGER"
+    BOOLEAN = "BOOLEAN"
+    NULL = "NULL"
+    RETURN_VALUE = "RETURN_VALUE"
+    ERROR = "ERROR"
+    FUNCTION = "FUNCTION"
+    STRING = "STRING"
+    BUILTIN = "BUILTIN"
+    ARRAY = "ARRAY"
+    HASH = "HASH"
 
 # Classes in Python have reference semantics which makes any two HashKeys
 # different. namedtyple on the other hand has value sematics. 
-HashKey = namedtuple("HashKey", ["type", "value"]) # // TODO: type: Type_, value: int
+HashKey = namedtuple("HashKey", ["type", "value"]) # // TODO: type: ObjectType, value: int
 
-# TODO: How to force runtime error if method is not implemented? It currently ignored
+# TODO: How to force runtime error if method is not implemented? It's currently ignored
 class Hashable:
     @abstractclassmethod
     def hash_key(self) -> HashKey:
@@ -76,7 +76,7 @@ class Hashable:
 
 class Object:   
     @abstractclassmethod
-    def type_(self) -> Type_:
+    def type_(self) -> ObjectType:
         raise NotImplementedError
 
     @abstractclassmethod
@@ -88,8 +88,8 @@ class Integer(Object, Hashable):
         self.value = value
 
     # TODO: why do we even have type_ when we ask isinstance?
-    def type_(self) -> Type_:
-        return Type_.INTEGER_OBJ
+    def type_(self) -> ObjectType:
+        return ObjectType.INTEGER
 
     def inspect(self) -> str:
         return str(self.value)
@@ -101,8 +101,8 @@ class String(Object, Hashable):
     def __init__(self, value: str):
         self.value = value
 
-    def type_(self) -> Type_:
-        return Type_.STRING_OBJ
+    def type_(self) -> ObjectType:
+        return ObjectType.STRING
 
     def inspect(self) -> str:
         return str(self.value)
@@ -114,8 +114,8 @@ class Boolean(Object, Hashable):
     def __init__(self, value: bool):
         self.value = value
 
-    def type_(self) -> Type_:
-        return Type_.BOOLEAN_OBJ
+    def type_(self) -> ObjectType:
+        return ObjectType.BOOLEAN
 
     def inspect(self) -> str:
         # Python's boolean literals are True and False
@@ -136,26 +136,25 @@ class Boolean(Object, Hashable):
 # Null is a type like Integer and Boolean except it doesn't wrap a value. It
 # represents the absence of a value.
 class Null(Object):
-    def type_(self) -> Type_:
-        return Type_.NULL_OBJ
+    def type_(self) -> ObjectType:
+        return ObjectType.NULL
 
     def inspect(self) -> str:
         return "null"
 
-# TODO: Rename to ReturnValue
 # ReturnValue is a wrapper around another Monkey object.
-class Return_value(Object):
+class ReturnValue(Object):
     def __init__(self, value: Object):     
         self.value = value
 
-    def type_(self) -> Type_:
-        return Type_.RETURN_VALUE_OBJ
+    def type_(self) -> ObjectType:
+        return ObjectType.RETURN_VALUE
 
     def inspect(self) -> str:
         # Satisfies mypy that infinite recursion cannot happen. Passing
         # Return_value is possible type system wise given Object
         # constraint, and type hints doesn't support exclusing single type.
-        assert(not isinstance(self, Return_value))
+        assert(not isinstance(self, ReturnValue))
         return self.value.inspect()
 
 # Error wraps a string error message. In a production language, we'd want to
@@ -164,8 +163,8 @@ class Error(Object):
     def __init__(self, message: str):
         self.message = message
 
-    def type_(self) -> Type_:
-        return Type_.ERROR_OBJ
+    def type_(self) -> ObjectType:
+        return ObjectType.ERROR
 
     def inspect(self) -> str:
         return f"ERROR: {self.message}"
@@ -180,8 +179,8 @@ class Function(Object):
         # allows the function to later access values within the closure.        
         self.env = env
 
-    def type_(self) -> Type_:
-        return Type_.FUNCTION_OBJ
+    def type_(self) -> ObjectType:
+        return ObjectType.FUNCTION
 
     def inspect(self) -> str:
         params = []
@@ -193,8 +192,8 @@ class Array(Object):
     def __init__(self, elements: List[Object]):
         self.elements = elements
 
-    def type_(self) -> Type_:
-        return Type_.ARRAY_OBJ
+    def type_(self) -> ObjectType:
+        return ObjectType.ARRAY
 
     def inspect(self) -> str:
         elements = []
@@ -211,8 +210,8 @@ class Hash(Object):
     def __init__(self, pairs: Dict[HashKey, HashPair]) -> None:
         self.pairs = pairs
 
-    def type_(self) -> Type_:
-        return Type_.HASH_OBJ
+    def type_(self) -> ObjectType:
+        return ObjectType.HASH
 
     def inspect(self) -> str:
         pairs = []
@@ -226,8 +225,8 @@ class Builtin(Object):
     def __init__(self, fn: BuiltinFunction):
         self.fn = fn
 
-    def type_(self) -> Type_:
-        return Type_.BUILTIN_OBJ
+    def type_(self) -> ObjectType:
+        return ObjectType.BUILTIN
 
     def inspect(self) -> str:
         return "builtin function"

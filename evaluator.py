@@ -16,7 +16,7 @@ def _len_built_in(args: List[object.Object]) -> Union[object.Integer, object.Err
 def _first_built_in(args: List[object.Object]) -> object.Object:
     if len(args) != 1:
         return object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
-    if args[0].type_() != object.Type_.ARRAY_OBJ:
+    if args[0].type_() != object.ObjectType.ARRAY:
         return object.Error(f"argument to 'first' must be ARRAY. Got {args[0].type_().value}")
     array = args[0]
     if len(array.elements) > 0:
@@ -26,7 +26,7 @@ def _first_built_in(args: List[object.Object]) -> object.Object:
 def _last_built_in(args: List[object.Array]) -> object.Object:
     if len(args) != 1:
         return object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
-    if args[0].type_() != object.Type_.ARRAY_OBJ:
+    if args[0].type_() != object.ObjectType.ARRAY:
         return object.Error(f"argument to 'last' must be ARRAY. Got {args[0].type_().value}")
     array = args[0]
     length = len(array.elements)
@@ -37,7 +37,7 @@ def _last_built_in(args: List[object.Array]) -> object.Object:
 def _rest_built_in(args: List[object.Array]) -> object.Object:
     if len(args) != 1:
         return object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
-    if args[0].type_() != object.Type_.ARRAY_OBJ:
+    if args[0].type_() != object.ObjectType.ARRAY:
         return object.Error(f"argument to 'rest' must be ARRAY. Got {args[0].type_().value}")
     array = args[0]
     length = len(array.elements)
@@ -49,7 +49,7 @@ def _rest_built_in(args: List[object.Array]) -> object.Object:
 def _push_built_in(args: List[object.Array]) -> object.Object:
     if len(args) != 2:
         return object.Error(f"wrong number of arguments. Got {len(args)}, want 2")
-    if args[0].type_() != object.Type_.ARRAY_OBJ:
+    if args[0].type_() != object.ObjectType.ARRAY:
         return object.Error(f"argument to 'push' must be ARRAY. Got {args[0].type_().value}")
     array = args[0]
     # Monkey arrays are immutable so we must clone the underlying Python type
@@ -98,7 +98,7 @@ class Evaluator:
             # their origin.            
             if self._is_error(value):
                 return value
-            return object.Return_value(value)
+            return object.ReturnValue(value)
         elif isinstance(node, ast.LetStatement):
             value = self.eval(node.value, env)
             if self._is_error(value):
@@ -181,7 +181,7 @@ class Evaluator:
         # to stop the evaluation of the last called function's body. Otherwise,
         # _eval_block_statement would stop evaluating statements in outer
         # functions.        
-        if isinstance(obj, object.Return_value):
+        if isinstance(obj, object.ReturnValue):
             return obj.value
         return obj
 
@@ -195,7 +195,7 @@ class Evaluator:
             # but unwrap its value. ReturnValue is an internal detail to allow
             # Eval() to signal to its caller that it encountered and evaluated a
             # return statement.            
-            if isinstance(result, object.Return_value):
+            if isinstance(result, object.ReturnValue):
                 return result.value
             elif isinstance(result, object.Error):
                 return result
@@ -206,7 +206,7 @@ class Evaluator:
         for s in stmts:
             result = self.eval(s, env)
             if result != None:
-                if isinstance(result, object.Return_value) or isinstance(result, object.Error):
+                if isinstance(result, object.ReturnValue) or isinstance(result, object.Error):
                     # Compared to _eval_program(), we don't unwrap the return
                     # value. Instead when an ReturnValue is encountered as the
                     # result of evaluating a statement, we return it to
@@ -241,15 +241,15 @@ class Evaluator:
             return Evaluator.false
 
     def _eval_minus_prefix_operator_expression(self, right: object.Object) -> object.Object:
-        if right.type_() != object.Type_.INTEGER_OBJ:
+        if right.type_() != object.ObjectType.INTEGER:
             return object.Error(f"unknown operator: -{right.type_().value}")
         value = right.value
         return object.Integer(value = -value)
 
     def _eval_infix_expression(self, operator: str, left: object.Object, right: object.Object) -> object.Object:
-        if left.type_() == object.Type_.INTEGER_OBJ and right.type_() == object.Type_.INTEGER_OBJ:
+        if left.type_() == object.ObjectType.INTEGER and right.type_() == object.ObjectType.INTEGER:
             return self._eval_integer_infix_expression(operator, left, right)
-        elif left.type_() == object.Type_.STRING_OBJ and right.type_() == object.Type_.STRING_OBJ:
+        elif left.type_() == object.ObjectType.STRING and right.type_() == object.ObjectType.STRING:
             return self._eval_string_infix_expression(operator, left, right)        
         # For booleans we can use reference comparison to check for equality. It
         # works because of our singleton True and False instances but wouldn't
@@ -327,9 +327,9 @@ class Evaluator:
         return result
 
     def _eval_index_expression(self, left: object.Object, index: object.Object) -> object.Object:
-        if left.type_() == object.Type_.ARRAY_OBJ and index.type_() == object.Type_.INTEGER_OBJ:
+        if left.type_() == object.ObjectType.ARRAY and index.type_() == object.ObjectType.INTEGER:
             return self._eval_array_index_expression(left, index)
-        elif left.type_() == object.Type_.HASH_OBJ:
+        elif left.type_() == object.ObjectType.HASH:
             return self._eval_hash_index_expression(left, index)
         return object.Error(f"index operator not supported: {left.type_().value}")
 
