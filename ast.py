@@ -1,6 +1,7 @@
 from abc import ABC, abstractclassmethod
 from typing import List, Optional, Dict, Type
 from lexer import Token
+from functools import reduce
 
 class Node(ABC):
     @abstractclassmethod
@@ -44,10 +45,7 @@ class Program(Node):
             return ""
 
     def string(self) -> str:
-        out = ""
-        for s in self.statements:
-            out += s.string()
-        return out
+        return reduce(lambda a, b: a + b.string(), self.statements, "")
 
 class Identifier(Expression):
     def __init__(self, token: Token, value: str):
@@ -65,6 +63,11 @@ class LetStatement(Statement):
 
     def string(self) -> str:
         out = f"{self.token_literal()} {self.name.string()} = "
+
+        # LetStatement, ReturnStatement, and ExpressionStatement may contain a
+        # None member. This happens when attempting to call Program.string() on
+        # a program with parse errors. Program.string() isn't called by tests
+        # nor main.py, but may be enabled during debugging.
         if self.value != None:
             out += self.value.string()
         return out + ";"
@@ -88,7 +91,7 @@ class ExpressionStatement(Expression):
     def string(self) -> str:
         if self.expression != None:
             return self.expression.string()
-        return ""
+        return ""     
 
 class IntegerLiteral(Expression):
     def __init__(self, token: Token, value: int):
@@ -128,10 +131,7 @@ class BlockStatement(Statement):
         self.statements = statements or []
 
     def string(self) -> str:
-        out = ""
-        for s in self.statements:
-            out += s.string()
-        return out
+        return reduce(lambda a, b: a + b.string(), self.statements, "")
 
 class IfExpression(Expression):
     def __init__(self, token: Token, condition: Expression, consequence: BlockStatement, alternative: BlockStatement):
@@ -153,10 +153,8 @@ class FunctionLiteral(Expression):
         self.body = body
 
     def string(self) -> str:
-        params = []
-        for p in self.parameters:
-            params.append(p.string())
-        return f"{self.token_literal}({', '.join(params)}) {self.body.string()}"
+        params = map(lambda p: p.string(), self.parameters)
+        return f"{self.token_literal()}({', '.join(params)}) {self.body.string()}"
 
 class CallExpression(Expression):
     def __init__(self, token: Token, function: Expression, arguments: List[Expression]):
@@ -165,9 +163,7 @@ class CallExpression(Expression):
         self.arguments = arguments or []
 
     def string(self) -> str:
-        args = []
-        for a in self.arguments:
-            args.append(a.string())
+        args = map(lambda a: a.string(), self.arguments)
         return f"{self.function.string()}({', '.join(args)})"
     
 class StringLiteral(Expression):
@@ -181,9 +177,7 @@ class ArrayLiteral(Expression):
         self.elements = elements
 
     def string(self) -> str:
-        elements = []
-        for e in self.elements:
-            elements.append(e.string())
+        elements = map(lambda e: e.string(), self.elements)
         return f"[{', '.join(elements)}]"
 
 class IndexExpression(Expression):
@@ -203,7 +197,5 @@ class HashLiteral(Expression):
         self.pairs = pairs
 
     def string(self) -> str:
-        pairs = []
-        for k, v in self.pairs.items():
-            pairs.append(f"{k.string()}: {v.string()}")
+        pairs = map(lambda p: f"{p[0].string()}: {p[1].string()}", self.pairs.items())
         return f"{{{', '.join(pairs)}}}"
