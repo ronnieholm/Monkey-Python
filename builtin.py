@@ -1,8 +1,6 @@
 from typing import List, Union, NewType, Callable, Dict
 import object
-from evaluator import Evaluator
 
-# TODO: Move to statics inside Builtin?
 def _len_built_in(args: List[object.Object]) -> Union[object.Integer, object.Error]:
     if len(args) != 1:
         return object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
@@ -14,6 +12,7 @@ def _len_built_in(args: List[object.Object]) -> Union[object.Integer, object.Err
         return object.Error(f"argument to 'len' not supported. Got {args[0].type_().value}")
 
 def _first_built_in(args: List[object.Object]) -> object.Object:
+    from evaluator import Evaluator
     if len(args) != 1:
         return object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
     if args[0].type_() != object.ObjectType.ARRAY:
@@ -24,6 +23,7 @@ def _first_built_in(args: List[object.Object]) -> object.Object:
     return Evaluator.null
 
 def _last_built_in(args: List[object.Array]) -> object.Object:
+    from evaluator import Evaluator
     if len(args) != 1:
         return object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
     if args[0].type_() != object.ObjectType.ARRAY:
@@ -35,6 +35,7 @@ def _last_built_in(args: List[object.Array]) -> object.Object:
     return Evaluator.null
 
 def _rest_built_in(args: List[object.Array]) -> object.Object:
+    from evaluator import Evaluator
     if len(args) != 1:
         return object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
     if args[0].type_() != object.ObjectType.ARRAY:
@@ -58,6 +59,7 @@ def _push_built_in(args: List[object.Array]) -> object.Object:
     return object.Array(new_elements)
 
 def _puts_built_in(args: List[object.Object]) -> object.Object: # TODO: why not object.Null?
+    from evaluator import Evaluator    
     for arg in args:
         print(arg.inspect())
     return Evaluator.null
