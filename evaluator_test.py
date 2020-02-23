@@ -3,6 +3,7 @@ from collections import namedtuple
 from parser import Parser
 from lexer import Lexer
 import object
+import environment
 from evaluator import Evaluator
 from typing import Type, Dict
 
@@ -34,7 +35,7 @@ class LexerTest(unittest.TestCase):
         p = Parser(l)
         e = Evaluator()
         program = p.parse_program()
-        env = object.Environment()
+        env = environment.Environment()
         return e.eval(program, env)
 
     def _test_integer_object(self, obj: object.Object, expected: int) -> None:

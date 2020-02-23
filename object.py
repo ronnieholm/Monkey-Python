@@ -1,46 +1,10 @@
 from enum import Enum, unique
 from abc import ABC, abstractclassmethod
 import ast
+from environment import Environment
 from typing import List, Dict, Optional, Type, NewType, Callable, Any
 import hashlib
 from collections import namedtuple
-
-# TODO: Move environment to seperate file
-
-# Environment is inside object or it would resulting in a circular dependency
-# with Object referencing Environment and Environment refering Object modules.
-# We still have a typing issue in that Object and Environment reference each
-# other inside a single module. Before Python 3.7, the only way to forward
-# declare a type is by quoting it. MyPy will remove the quotes during type
-# checking as per
-# https://stackoverflow.com/questions/55320236/does-python-evaluate-type-hinting-of-a-forward-reference
-class Environment:
-    def __init__(self):
-        self._store: Dict[str, "Object"] = {}
-        self.outer: Environment = None
-
-    @staticmethod
-    def new_enclosed_environment(outer: "Environment") -> "Environment":
-        env = Environment()
-        env.outer = outer
-        return env
-
-    def get(self, name: str) -> "Optional[(Object, bool)]":
-        ok = name in self._store.keys()
-        obj = None
-        if ok:
-            obj = self._store[name]
-        elif self.outer != None:
-            # If current environment doesn't have a value associated with a
-            # name, we recursively call get on enclosing environment (which the
-            # current environment is extending) until either name is found or
-            # caller can issue a "unknown identifier" error.
-            obj, ok = self.outer.get(name)
-        return obj, ok
-
-    def set(self, name: str, value: "Object") -> "Object":
-        self._store[name] = value
-        return value
 
 ObjectType = str
 

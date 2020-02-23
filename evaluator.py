@@ -1,5 +1,6 @@
 from typing import List, Optional, Type, Dict, Callable, NewType, Union
 import ast
+import environment
 import object
 
 # TODO: Move to statics inside Builtin?
@@ -82,7 +83,7 @@ class Evaluator:
     def __init__(self):
         pass
 
-    def eval(self, node: ast.Node, env: object.Environment) -> object.Object:
+    def eval(self, node: ast.Node, env: environment.Environment) -> object.Object:
         # statements
         if isinstance(node, ast.Program):
             return self._eval_program(node.statements, env)
@@ -169,8 +170,8 @@ class Evaluator:
         else:
             return object.Error(f"not a function: {fn.type_().value}")
 
-    def _extend_function_environment(self, fn: object.Function, args: List[object.Object]) -> object.Environment:
-        env = object.Environment.new_enclosed_environment(fn.env)
+    def _extend_function_environment(self, fn: object.Function, args: List[object.Object]) -> environment.Environment:
+        env = environment.Environment.new_enclosed_environment(fn.env)
         for param_idx, param in enumerate(fn.parameters):
             env.set(param.value, args[param_idx])
         return env
@@ -185,7 +186,7 @@ class Evaluator:
             return obj.value
         return obj
 
-    def _eval_program(self, stmts: List[ast.BlockStatement], env: object.Environment) -> Optional[object.Object]:
+    def _eval_program(self, stmts: List[ast.BlockStatement], env: environment.Environment) -> Optional[object.Object]:
         result = None
         for s in stmts:
             result = self.eval(s, env)
@@ -201,7 +202,7 @@ class Evaluator:
                 return result
         return result
 
-    def _eval_block_statement(self, stmts: List[ast.Statement], env: object.Environment) -> Optional[object.Object]:
+    def _eval_block_statement(self, stmts: List[ast.Statement], env: environment.Environment) -> Optional[object.Object]:
         result = None
         for s in stmts:
             result = self.eval(s, env)
@@ -294,7 +295,7 @@ class Evaluator:
         right_val = right.value
         return object.String(left_val + right_val)
 
-    def _eval_if_expression(self, ie: ast.IfExpression, env: object.Environment) -> object.Object:
+    def _eval_if_expression(self, ie: ast.IfExpression, env: environment.Environment) -> object.Object:
         condition = self.eval(ie.condition, env)
         if self._is_error(condition):
             return condition
@@ -305,7 +306,7 @@ class Evaluator:
         else:
             return Evaluator.null
 
-    def _eval_identifier(self, node: ast.Identifier, env: object.Environment) -> object.Object:
+    def _eval_identifier(self, node: ast.Identifier, env: environment.Environment) -> object.Object:
         value, ok = env.get(node.value)
         if ok:
             return value       
@@ -313,7 +314,7 @@ class Evaluator:
             return builtins[node.value]
         return object.Error(f"identifier not found: {node.value}")
 
-    def _eval_expressions(self, exprs: List[ast.Expression], env: object.Environment) -> List[object.Object]:
+    def _eval_expressions(self, exprs: List[ast.Expression], env: environment.Environment) -> List[object.Object]:
         result = []
 
         # By definition arguments are evaluated left to right. Since the side
@@ -349,7 +350,7 @@ class Evaluator:
             return Evaluator.null
         return hash.pairs[index.hash_key()].value
 
-    def _eval_hash_literal(self, node: ast.HashLiteral, env: object.Environment) -> object.Object:
+    def _eval_hash_literal(self, node: ast.HashLiteral, env: environment.Environment) -> object.Object:
         pairs: Dict[object.HashKey, object.HashPair] = {}
         for key_node, value_node in node.pairs.items():
             key = self.eval(key_node, env)
