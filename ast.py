@@ -39,10 +39,8 @@ class Program(Node):
         self.statements = statements or []
 
     def token_literal(self) -> str:
-        if len(self.statements) > 0:
-            return self.statements[0].token_literal()
-        else:
-            return ""
+        stmts = self.statements
+        return stmts[0].token_literal if len(stmts) > 0 else ""
 
     def string(self) -> str:
         return reduce(lambda a, b: a + b.string(), self.statements, "")
@@ -89,9 +87,8 @@ class ExpressionStatement(Expression):
         self.expression = expression
 
     def string(self) -> str:
-        if self.expression != None:
-            return self.expression.string()
-        return ""     
+        expr = self.expression
+        return expr.string() if expr != None else ""
 
 class IntegerLiteral(Expression):
     def __init__(self, token: Token, value: int):

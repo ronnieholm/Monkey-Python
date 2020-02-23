@@ -59,7 +59,7 @@ def _push_built_in(args: List[object.Array]) -> object.Object:
     return object.Array(new_elements)
 
 def _puts_built_in(args: List[object.Object]) -> object.Object: # TODO: why not object.Null?
-    from evaluator import Evaluator    
+    from evaluator import Evaluator
     for arg in args:
         print(arg.inspect())
     return Evaluator.null

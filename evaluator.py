@@ -11,9 +11,6 @@ class Evaluator:
     true = object.Boolean(True)
     false = object.Boolean(False)
 
-    def __init__(self):
-        pass
-
     def eval(self, node: ast.Node, env: environment.Environment) -> object.Object:
         # statements
         if isinstance(node, ast.Program):
@@ -112,10 +109,8 @@ class Evaluator:
         # several functions and stopping evaluation in all of them. We only want
         # to stop the evaluation of the last called function's body. Otherwise,
         # _eval_block_statement would stop evaluating statements in outer
-        # functions.        
-        if isinstance(obj, object.ReturnValue):
-            return obj.value
-        return obj
+        # functions.
+        return obj.value if isinstance(obj, object.ReturnValue) else obj
 
     def _eval_program(self, stmts: List[ast.BlockStatement], env: environment.Environment) -> Optional[object.Object]:
         result = None
@@ -148,10 +143,7 @@ class Evaluator:
         return result
 
     def _native_bool_to_boolean_object(self, input: bool) -> object.Boolean:
-        if input:
-            return Evaluator.true
-        else:
-            return Evaluator.false
+        return Evaluator.true if input else Evaluator.false
 
     def _eval_prefix_expression(self, operator: str, right: object.Object) -> object.Object:
         if operator == "!":
