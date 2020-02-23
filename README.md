@@ -1,5 +1,7 @@
 # Monkey-Python
 
+(A C# version of Monkey is also [available](https://github.com/ronnieholm/Monkey-CSharp))
+
 A Python port of the Monkey programming language from the [Writing an
 interpreter in Go](https://interpreterbook.com) book. It's written in idiomatic
 Python targeting at least CPython 3.6.
