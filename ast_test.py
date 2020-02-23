@@ -6,16 +6,9 @@ class AstTest(unittest.TestCase):
     def test_string(self):
         program = Program(statements = [
             LetStatement(
-                token = Token(type = TokenType.LET, literal = "let"),
-                name = Identifier(
-                    token = Token(type = TokenType.IDENT, literal = "myVar"),
-                    value = "myVar"
-                ),
-                value = Identifier(
-                    token = Token(type = TokenType.IDENT, literal = "anotherVar"),
-                    value = "anotherVar" 
-                )
-            )
-        ] )
+                Token(type = TokenType.LET, literal = "let"),
+                Identifier(Token(TokenType.IDENT, "myVar"), "myVar"),
+                Identifier(Token(TokenType.IDENT, "anotherVar"), "anotherVar")
+            )])
 
         self.assertEqual(program.string(), "let myVar = anotherVar;")

@@ -10,19 +10,30 @@ class Node(ABC):
 
     @abstractclassmethod
     def string(self) -> str:
-        # We don't override __str__ or __repr__ because we want to make string
-        # calls explicit.
+        # We don't override __str__ or __repr__ to make string calls explicit.
         raise NotImplementedError
 
 class Statement(Node):
+    def __init__(self, token: Token):
+        self.token = token
+
     def token_literal(self) -> Optional[str]:
-        raise NotImplementedError
+        return self.token.literal
+
+    def string(self):
+        return self.token.literal
 
 class Expression(Node):
-    def token_literal(self) -> str:
-        raise NotImplementedError
+    def __init__(self, token: Token):
+        self.token = token
 
-class Program(Statement):
+    def token_literal(self) -> Optional[str]:
+        return self.token.literal
+
+    def string(self):
+        return self.token.literal
+
+class Program(Node):
     def __init__(self, statements = None):
         self.statements = statements or []
 
@@ -40,23 +51,17 @@ class Program(Statement):
 
 class Identifier(Expression):
     def __init__(self, token: Token, value: str):
-        self.token = token
+        super(Identifier, self).__init__(token)
         self.value = value
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
     def string(self) -> str:
         return self.value
 
 class LetStatement(Statement):    
     def __init__(self, token: Token, name: Identifier, value: Expression):
-        self.token = token
+        super(LetStatement, self).__init__(token)
         self.name = name
         self.value = value
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
     def string(self) -> str:
         out = f"{self.token_literal()} {self.name.string()} = "
@@ -66,11 +71,8 @@ class LetStatement(Statement):
 
 class ReturnStatement(Statement):
     def __init__(self, token: Token, return_value: Expression):
-        self.token = token
+        super(ReturnStatement, self).__init__(token)
         self.return_value = return_value
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
     def string(self) -> str:
         out = f"{self.token_literal()} "
@@ -80,11 +82,8 @@ class ReturnStatement(Statement):
 
 class ExpressionStatement(Expression):
     def __init__(self, token: Token, expression: Expression):
-        self.token = token
+        super(ExpressionStatement, self).__init__(token)
         self.expression = expression
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
     def string(self) -> str:
         if self.expression != None:
@@ -93,30 +92,21 @@ class ExpressionStatement(Expression):
 
 class IntegerLiteral(Expression):
     def __init__(self, token: Token, value: int):
-        self.token = token
+        super(IntegerLiteral, self).__init__(token)
         self.value = value
-    
-    def token_literal(self) -> str:
-        return self.token.literal
-
-    def string(self) -> str:
-        return self.token.literal
 
 class PrefixExpression(Expression):
     def __init__(self, token: Token, operator: str, right: Expression):
-        self.token = token
+        super(PrefixExpression, self).__init__(token)
         self.operator = operator
         self.right = right
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
     def string(self) -> str:
         return f"({self.operator}{self.right.string()})"
 
 class InfixExpression(Expression):
     def __init__(self, token:Token, left: Expression, operator: str, right: Expression):
-        self.token = token
+        super(InfixExpression, self).__init__(token)
 
         # Object being accessed is an expression as it can be an identifier, an
         # array literal, or a function call.
@@ -124,30 +114,18 @@ class InfixExpression(Expression):
         self.operator = operator
         self.right = right
 
-    def token_literal(self) -> str:
-        return self.token.literal
-
     def string(self) -> str:        
         return f"({self.left.string()} {self.operator} {self.right.string()})"
 
 class Boolean(Expression):
     def __init__(self, token: Token, value: bool):
-        self.token = token
+        super(Boolean, self).__init__(token)
         self.value = value
-
-    def token_literal(self) -> str:
-        return self.token.literal
-
-    def string(self) -> str:
-        return self.token.literal
 
 class BlockStatement(Statement):
     def __init__(self, token: Token, statements: List[Statement]):
-        self.token = token
+        super(BlockStatement, self).__init__(token)
         self.statements = statements or []
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
     def string(self) -> str:
         out = ""
@@ -157,13 +135,10 @@ class BlockStatement(Statement):
 
 class IfExpression(Expression):
     def __init__(self, token: Token, condition: Expression, consequence: BlockStatement, alternative: BlockStatement):
-        self.token = token
+        super(IfExpression, self).__init__(token)
         self.condition = condition
         self.consequence = consequence
         self.alternative = alternative
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
     def string(self) -> str:
         out = f"if {self.condition.string()} {{ {self.consequence.string()} }}"
@@ -173,12 +148,9 @@ class IfExpression(Expression):
 
 class FunctionLiteral(Expression):
     def __init__(self, token: Token, parameters: List[Identifier], body: BlockStatement):
-        self.token = token
+        super(FunctionLiteral, self).__init__(token)
         self.parameters = parameters
         self.body = body
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
     def string(self) -> str:
         params = []
@@ -188,12 +160,9 @@ class FunctionLiteral(Expression):
 
 class CallExpression(Expression):
     def __init__(self, token: Token, function: Expression, arguments: List[Expression]):
-        self.token = token
+        super(CallExpression, self).__init__(token)
         self.function = function
         self.arguments = arguments or []
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
     def string(self) -> str:
         args = []
@@ -203,22 +172,13 @@ class CallExpression(Expression):
     
 class StringLiteral(Expression):
     def __init__(self, token: Token, value: str):
-        self.token = token
+        super(StringLiteral, self).__init__(token)
         self.value = value
-    
-    def token_literal(self) -> str:
-        return self.token.literal
-
-    def string(self) -> str:
-        return self.token.literal
 
 class ArrayLiteral(Expression):
     def __init__(self, token: Token, elements: List[Expression]):
-        self.token = token
+        super(ArrayLiteral, self).__init__(token)
         self.elements = elements
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
     def string(self) -> str:
         elements = []
@@ -228,12 +188,9 @@ class ArrayLiteral(Expression):
 
 class IndexExpression(Expression):
     def __init__(self, token: Token, left: Expression, index: Expression):
-        self.token = token
+        super(IndexExpression, self).__init__(token)
         self.left = left
         self.index = index
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
     def string(self) -> str:
         return f"({self.left.string()}[{self.index.string()}])"
@@ -242,11 +199,8 @@ class HashLiteral(Expression):
     from object import Object
     
     def __init__(self, token: Token, pairs: Dict[Object, Object]):
-        self.token = token
+        super(HashLiteral, self).__init__(token)
         self.pairs = pairs
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
     def string(self) -> str:
         pairs = []

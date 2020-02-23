@@ -1,3 +1,5 @@
+default: test mypy repl
+
 repl:
 	python3 main.py
 
@@ -11,5 +13,3 @@ clean:
 	rm -fr __pycache__
 	rm -fr .mypy_cache
 	rm -fr venv
-
-all: test mypy repl
