@@ -6,8 +6,6 @@ from typing import List, Dict, Optional, Type, NewType, Callable, Any
 import hashlib
 from collections import namedtuple
 
-ObjectType = str
-
 @unique
 class ObjectType(Enum):
     # Within each Object derived class, we could use type() to get at its Python
