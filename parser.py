@@ -54,11 +54,11 @@ class Parser:
         self._lexer = lexer
 
         # Acts like _position and _peek_char within the lexer, but instead of
-        # pointing to characters in the input they point to current and next
+        # pointing to characters in the source they point to current and next
         # tokens. We need _current_token, the current token under examination,
         # to decide what to do next, and we need _peekToken to guide the
         # decision in case _current_token doesn't provide us with enough
-        # information, e.g., with input "5;", _current_token is Int and we
+        # information, e.g., with source "5;", _current_token is Int and we
         # require _peek_token to decide if we're at the end of the line or at
         # the start of an arithmetic expression. This implements a parser with
         # one token lookahead.
@@ -123,7 +123,7 @@ class Parser:
             return self._parse_return_statement()
 
         # The only two real statement types in Monkey are let and return. If
-        # none of those got matched, try to parse input as a pseudo
+        # none of those got matched, try to parse source as a pseudo
         # ExpressionStatement.
         return self._parse_expression_statement()
 

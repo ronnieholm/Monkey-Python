@@ -140,7 +140,7 @@ class Lexer:
         position = self._position + 1
 
         # BUG: Passing a string which isn't " terminated causes an infinite loop
-        # because even though we reached the end of input, the " characters
+        # because even though we reached the end of source, the " characters
         # hasn't been reached.
         while True:
             self._read_char()

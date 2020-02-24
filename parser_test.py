@@ -6,19 +6,23 @@ from lexer import Lexer
 
 
 class ParserTests(unittest.TestCase):
+    def _setup_program(self, source: str) -> ast.Program:
+        lexer = Lexer(source)
+        parser = Parser(lexer)
+        program = parser.parse_program()
+        self._check_parser_errors(parser)
+        return program
+
     def test_let_statements(self):
         Case = namedtuple(
-            "Case", ["input", "expected_identifier", "expected_value"])
+            "Case", ["source", "expected_identifier", "expected_value"])
         tests = [
             Case("let x = 5;", "x", 5),
             Case("let y = true;", "y", True),
             Case("let foobar = y", "foobar", "y")]
 
         for test in tests:
-            lexer = Lexer(test.input)
-            parser = Parser(lexer)
-            program = parser.parse_program()
-            self._check_parser_errors(parser)
+            program = self._setup_program(test.source)
             self.assertEqual(len(program.statements), 1)
             stmt = program.statements[0]
             self._test_let_statement(stmt, test.expected_identifier)
@@ -40,17 +44,14 @@ class ParserTests(unittest.TestCase):
         self.fail("See stdout")
 
     def test_return_statements(self):
-        Case = namedtuple("Case", ["input", "expected_value"])
+        Case = namedtuple("Case", ["source", "expected_value"])
         tests = [
             Case("return 5;", 5),
             Case("return true;", True),
             Case("return foobar;", "foobar")]
 
         for test in tests:
-            lexer = Lexer(test.input)
-            parser = Parser(lexer)
-            program = parser.parse_program()
-            self._check_parser_errors(parser)
+            program = self._setup_program(test.source)
             self.assertEqual(len(program.statements), 1)
             return_stmt = program.statements[0]
             self.assertIsInstance(return_stmt, ast.ReturnStatement)
@@ -60,10 +61,7 @@ class ParserTests(unittest.TestCase):
 
     def test_identifier_expression(self):
         source = "foobar"
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        self._check_parser_errors(parser)
+        program = self._setup_program(source)
         self.assertEqual(len(program.statements), 1)
         stmt = program.statements[0]
         self.assertIsInstance(stmt, ast.ExpressionStatement)
@@ -74,10 +72,7 @@ class ParserTests(unittest.TestCase):
 
     def test_integer_literal_expression(self):
         source = "5"
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        self._check_parser_errors(parser)
+        program = self._setup_program(source)
         self.assertEqual(len(program.statements), 1)
         stmt = program.statements[0]
         self.assertIsInstance(stmt, ast.ExpressionStatement)
@@ -87,7 +82,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(literal.token.literal, "5")
 
     def test_parsing_prefix_expressions(self):
-        Case = namedtuple("Case", ["input", "operator", "value"])
+        Case = namedtuple("Case", ["source", "operator", "value"])
         tests = [
             Case("!5;", "!", 5),
             Case("-15;", "-", 15),
@@ -95,10 +90,7 @@ class ParserTests(unittest.TestCase):
             Case("!false;", "!", False)]
 
         for test in tests:
-            lexer = Lexer(test.input)
-            parser = Parser(lexer)
-            program = parser.parse_program()
-            self._check_parser_errors(parser)
+            program = self._setup_program(test.source)
             self.assertEqual(len(program.statements), 1)
             stmt = program.statements[0]
             self.assertIsInstance(stmt, ast.ExpressionStatement)
@@ -148,7 +140,7 @@ class ParserTests(unittest.TestCase):
 
     def test_parsing_infix_expressions(self):
         Case = namedtuple(
-            "Case", ["input", "left_value", "operator", "right_value"])
+            "Case", ["source", "left_value", "operator", "right_value"])
         tests = [
             Case("5 + 5;", 5, "+", 5),
             Case("5 - 5;", 5, "-", 5),
@@ -163,17 +155,14 @@ class ParserTests(unittest.TestCase):
             Case("false == false", False, "==", False)]
 
         for test in tests:
-            lexer = Lexer(test.input)
-            parser = Parser(lexer)
-            program = parser.parse_program()
-            self._check_parser_errors(parser)
+            program = self._setup_program(test.source)
             self.assertEqual(len(program.statements), 1)
             stmt = program.statements[0].expression
             self._test_infix_expression(
                 stmt, test.left_value, test.operator, test.right_value)
 
     def test_operator_precedence_parsing(self):
-        Case = namedtuple("Case", ["input", "expected"])
+        Case = namedtuple("Case", ["source", "expected"])
         tests = [
             Case("-a * b", "((-a) * b)"),
             Case("!-a", "(!(-a))"),
@@ -209,35 +198,26 @@ class ParserTests(unittest.TestCase):
             Case("add(a * b[2], b[1], 2 * [1, 2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))")]
 
         for test in tests:
-            lexer = Lexer(test.input)
-            parser = Parser(lexer)
-            program = parser.parse_program()
+            program = self._setup_program(test.source)
             # not self.assertEqual(len(program.statements), 1) as one test
             # consists of two statements.
-            self._check_parser_errors(parser)
             actual = program.string()
             self.assertEqual(actual, test.expected)
 
     def test_bool_expressions(self):
-        Case = namedtuple("Case", ["input", "expected"])
+        Case = namedtuple("Case", ["source", "expected"])
         tests = [
             Case("true", "true"),
             Case("false", "false")]
 
         for test in tests:
-            lexer = Lexer(test.input)
-            parser = Parser(lexer)
-            program = parser.parse_program()
-            self._check_parser_errors(parser)
+            program = self._setup_program(test.source)
             actual = program.string()
             self.assertEqual(actual, test.expected)
 
     def test_if_expression(self):
         source = "if (x < y) { x }"
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        self._check_parser_errors(parser)
+        program = self._setup_program(source)
         self.assertEqual(len(program.statements), 1)
         expr = program.statements[0].expression
         self.assertIsInstance(expr, ast.IfExpression)
@@ -250,10 +230,7 @@ class ParserTests(unittest.TestCase):
 
     def test_if_else_expression(self):
         source = "if (x < y) { x } else { y }"
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        self._check_parser_errors(parser)
+        program = self._setup_program(source)
         self.assertEqual(len(program.statements), 1)
         expr = program.statements[0].expression
         self.assertIsInstance(expr, ast.IfExpression)
@@ -269,10 +246,7 @@ class ParserTests(unittest.TestCase):
 
     def test_function_literal_parsing(self):
         source = "fn(x, y) { x + y; }"
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        self._check_parser_errors(parser)
+        program = self._setup_program(source)
         self.assertEqual(len(program.statements), 1)
         stmt = program.statements[0]
         self.assertIsInstance(stmt, ast.ExpressionStatement)
@@ -287,17 +261,14 @@ class ParserTests(unittest.TestCase):
         self._test_infix_expression(body_stmt.expression, "x", "+", "y")
 
     def test_function_parameter_parsing(self):
-        Case = namedtuple("Case", ["input", "expected_params"])
+        Case = namedtuple("Case", ["source", "expected_params"])
         tests = [
             Case("fn() {};", []),
             Case("fn(x) {};", ["x"]),
             Case("fn(x, y, z) {};", ["x", "y", "z"])]
 
         for test in tests:
-            lexer = Lexer(test.input)
-            parser = Parser(lexer)
-            program = parser.parse_program()
-            self._check_parser_errors(parser)
+            program = self._setup_program(test.source)
             stmt = program.statements[0]
             self.assertIsInstance(stmt, ast.ExpressionStatement)
             function = stmt.expression
@@ -309,10 +280,7 @@ class ParserTests(unittest.TestCase):
 
     def test_call_expression_parsing(self):
         source = "add(1, 2 * 3, 4 + 5);"
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        self._check_parser_errors(parser)
+        program = self._setup_program(source)
         self.assertEqual(len(program.statements), 1)
         stmt = program.statements[0]
         self.assertIsInstance(stmt, ast.ExpressionStatement)
@@ -325,17 +293,15 @@ class ParserTests(unittest.TestCase):
         self._test_infix_expression(expr.arguments[2], 4, "+", 5)
 
     def test_call_expression_parameter_parsing(self):
-        Case = namedtuple("Case", ["input", "expected_ident", "expected_args"])
+        Case = namedtuple(
+            "Case", ["source", "expected_ident", "expected_args"])
         tests = [
             Case("add();", "add", []),
             Case("add(1);", "add", [1]),
             Case("add(1, 2 * 3, 4 + 5);", "add", ["1", "(2 * 3)", "(4 + 5)"])]
 
         for test in tests:
-            lexer = Lexer(test.input)
-            parser = Parser(lexer)
-            program = parser.parse_program()
-            self._check_parser_errors(parser)
+            program = self._setup_program(test.source)
             self.assertEqual(len(program.statements), 1)
             stmt = program.statements[0]
             self.assertIsInstance(stmt, ast.ExpressionStatement)
@@ -348,10 +314,7 @@ class ParserTests(unittest.TestCase):
 
     def test_string_literal_expression(self):
         source = '"Hello world"'
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        self._check_parser_errors(parser)
+        program = self._setup_program(source)
         stmt = program.statements[0]
         self.assertIsInstance(stmt, ast.ExpressionStatement)
         literal = stmt.expression
@@ -360,10 +323,7 @@ class ParserTests(unittest.TestCase):
 
     def test_parsing_array_literals(self):
         source = "[1, 2 * 2, 3 + 3]"
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        self._check_parser_errors(parser)
+        program = self._setup_program(source)
         stmt = program.statements[0]
         self.assertIsInstance(stmt, ast.ExpressionStatement)
         array = stmt.expression
@@ -375,10 +335,7 @@ class ParserTests(unittest.TestCase):
 
     def test_parsing_index_expression(self):
         source = "myArray[1 + 1]"
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        self._check_parser_errors(parser)
+        program = self._setup_program(source)
         stmt = program.statements[0]
         self.assertIsInstance(stmt, ast.ExpressionStatement)
         index_expr = stmt.expression
@@ -388,10 +345,7 @@ class ParserTests(unittest.TestCase):
 
     def test_parsing_hash_literals_string_keys(self):
         source = '{"one": 1, "two": 2, "three": 3}'
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        self._check_parser_errors(parser)
+        program = self._setup_program(source)
         stmt = program.statements[0]
         self.assertIsInstance(stmt, ast.ExpressionStatement)
         hash_literal = stmt.expression
@@ -409,10 +363,7 @@ class ParserTests(unittest.TestCase):
 
     def test_parsing_empty_hash_literal(self):
         source = "{}"
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        self._check_parser_errors(parser)
+        program = self._setup_program(source)
         stmt = program.statements[0]
         self.assertIsInstance(stmt, ast.ExpressionStatement)
         hash_literal = stmt.expression
@@ -423,10 +374,7 @@ class ParserTests(unittest.TestCase):
 
     def test_parsing_hash_literals_with_expressions(self):
         source = '{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}'
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        self._check_parser_errors(parser)
+        program = self._setup_program(source)
         stmt = program.statements[0]
         self.assertIsInstance(stmt, ast.ExpressionStatement)
         hash_literal = stmt.expression

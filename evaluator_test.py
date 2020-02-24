@@ -7,7 +7,7 @@ import monkey_object
 import environment
 from evaluator import Evaluator
 
-Case = namedtuple("Case", ["input", "expected"])
+Case = namedtuple("Case", ["source", "expected"])
 
 
 class LexerTest(unittest.TestCase):
@@ -29,7 +29,7 @@ class LexerTest(unittest.TestCase):
             Case("3 * (3 * 3) + 10", 37),
             Case("(5 + 10 * 2 + 15 / 3) * 2 + -10", 50)]
         for test in tests:
-            evaluated = self._test_eval(test.input)
+            evaluated = self._test_eval(test.source)
             self._test_integer_object(evaluated, test.expected)
 
     def _test_eval(self, source: str) -> monkey_object.MonkeyObject:
@@ -66,7 +66,7 @@ class LexerTest(unittest.TestCase):
             Case("(1 > 2) == true", False),
             Case("(1 > 2) == false", True)]
         for test in tests:
-            evaluated = self._test_eval(test.input)
+            evaluated = self._test_eval(test.source)
             self._test_boolean_object(evaluated, test.expected)
 
     def _test_boolean_object(self, obj: monkey_object.Boolean, expected: bool) -> None:
@@ -82,7 +82,7 @@ class LexerTest(unittest.TestCase):
             Case("!!false", False),
             Case("!!5", True)]
         for test in tests:
-            evaluated = self._test_eval(test.input)
+            evaluated = self._test_eval(test.source)
             self._test_boolean_object(evaluated, test.expected)
 
     def test_if_else_expression(self) -> None:
@@ -93,7 +93,7 @@ class LexerTest(unittest.TestCase):
             Case("if (1 < 2) { 10 }", 10),
             Case("if (1 > 2) { 10 }", None)]
         for test in tests:
-            evaluated = self._test_eval(test.input)
+            evaluated = self._test_eval(test.source)
             if isinstance(evaluated, monkey_object.Integer):
                 self._test_integer_object(evaluated, test.expected)
             else:
@@ -132,7 +132,7 @@ class LexerTest(unittest.TestCase):
                    };
                    f(10);""", 20)]
         for test in tests:
-            evaluated = self._test_eval(test.input)
+            evaluated = self._test_eval(test.source)
             self._test_integer_object(evaluated, test.expected)
 
     def test_error_handling(self) -> None:
@@ -154,7 +154,7 @@ class LexerTest(unittest.TestCase):
             Case('"Hello" - "World"', "unknown operator: STRING - STRING"),
             Case('{"name": "Monkey"}[fn(x) { x }];', "unusable as hash key: FUNCTION")]
         for test in tests:
-            evaluated = self._test_eval(test.input)
+            evaluated = self._test_eval(test.source)
             self.assertIsInstance(evaluated, monkey_object.Error)
             self.assertEqual(evaluated.message, test.expected)
 
@@ -166,7 +166,7 @@ class LexerTest(unittest.TestCase):
             Case("let a = 5; let b = a; let c = a + b + 5; c;", 15)]
         for test in tests:
             self._test_integer_object(
-                self._test_eval(test.input), test.expected)
+                self._test_eval(test.source), test.expected)
 
     def test_function_object(self) -> None:
         source = "fn(x) { x + 2; };"
@@ -187,7 +187,7 @@ class LexerTest(unittest.TestCase):
             Case("fn(x) { x; }(5)", 5)]
         for test in tests:
             self._test_integer_object(
-                self._test_eval(test.input), test.expected)
+                self._test_eval(test.source), test.expected)
 
     def test_closures(self):
         source = """let newAdder = fn(x) {
@@ -231,7 +231,7 @@ class LexerTest(unittest.TestCase):
             Case('push([], 1)', [1]),
             Case('push(1, 1)', "argument to 'push' must be ARRAY. Got INTEGER")]
         for test in tests:
-            evaluated = self._test_eval(test.input)
+            evaluated = self._test_eval(test.source)
             if isinstance(test.expected, int):
                 self._test_integer_object(evaluated, test.expected)
             elif isinstance(test.expected, str):
@@ -271,7 +271,7 @@ class LexerTest(unittest.TestCase):
             Case("[1, 2, 3][3]", None),
             Case("[1, 2, 3][-1]", None)]
         for test in tests:
-            evaluated = self._test_eval(test.input)
+            evaluated = self._test_eval(test.source)
             if isinstance(test.expected, int):
                 self._test_integer_object(evaluated, test.expected)
             else:
@@ -312,7 +312,7 @@ class LexerTest(unittest.TestCase):
             Case('{true: 5}[true]', 5),
             Case('{false: 5}[false]', 5)]
         for test in tests:
-            evaluated = self._test_eval(test.input)
+            evaluated = self._test_eval(test.source)
             if isinstance(test.expected, int):
                 self._test_integer_object(evaluated, test.expected)
             else:
