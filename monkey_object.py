@@ -88,29 +88,29 @@ class Boolean(MonkeyObject, Hashable):
         return ObjectType.BOOLEAN
 
     def inspect(self) -> str:
-        # Python's boolean literals are True and False
-        # where Monkey's are true and false
+        # Python's boolean literals are True and False where Monkey's are true
+        # and false
         return "true" if self.value else "false"
 
     def hash_key(self) -> HashKey:
         value = 1 if self.value == 1 else 0
         return HashKey(self.type_(), value)
 
-# Null is a type like Integer and Boolean except it doesn't wrap a value. It
-# represents the absence of a value.
-
 
 class Null(MonkeyObject):
+    # Null is a type like Integer and Boolean except it doesn't wrap a value. It
+    # represents the absence of a value.
+
     def type_(self) -> ObjectType:
         return ObjectType.NULL
 
     def inspect(self) -> str:
         return "null"
 
-# ReturnValue is a wrapper around another Monkey object.
-
 
 class ReturnValue(MonkeyObject):
+    # ReturnValue is a wrapper around another Monkey object.
+
     def __init__(self, value: MonkeyObject):
         self.value = value
 
@@ -124,11 +124,11 @@ class ReturnValue(MonkeyObject):
         assert not isinstance(self, ReturnValue)
         return self.value.inspect()
 
-# Error wraps a string error message. In a production language, we'd want to
-# attach stack trace and line and column numbers to such error object.
-
 
 class Error(MonkeyObject):
+    # Error wraps a string error message. In a production language, we'd want to
+    # attach stack trace and line and column numbers to such error object.
+
     def __init__(self, message: str):
         self.message = message
 
