@@ -4,9 +4,10 @@ import environment
 import object
 import builtin
 
+
 class Evaluator:
     # As there's only ever a need for a single instance of each of these values,
-    # we optimize by pre-creating instances to return during evaluation.    
+    # we optimize by pre-creating instances to return during evaluation.
     null = object.Null()
     true = object.Boolean(True)
     false = object.Boolean(False)
@@ -24,7 +25,7 @@ class Evaluator:
 
             # Check for errors whenever Eval is called inside Eval in order to
             # stop errors from being passed around and bubbling up far from
-            # their origin.            
+            # their origin.
             if self._is_error(value):
                 return value
             return object.ReturnValue(value)
@@ -32,8 +33,8 @@ class Evaluator:
             value = self.eval(node.value, env)
             if self._is_error(value):
                 return value
-            return env.set(node.name.value, value)            
-        
+            return env.set(node.name.value, value)
+
         # expressions
         elif isinstance(node, ast.IntegerLiteral):
             return object.Integer(node.value)
@@ -42,7 +43,7 @@ class Evaluator:
         elif isinstance(node, ast.Boolean):
             return self._native_bool_to_boolean_object(node.value)
         elif isinstance(node, ast.PrefixExpression):
-            right = self.eval(node.right, env)            
+            right = self.eval(node.right, env)
             if self._is_error(node.right):
                 return right
             return self._eval_prefix_expression(node.operator, right)
@@ -121,7 +122,7 @@ class Evaluator:
             # return statement. Note how we don't return ReturnValue directly,
             # but unwrap its value. ReturnValue is an internal detail to allow
             # Eval() to signal to its caller that it encountered and evaluated a
-            # return statement.            
+            # return statement.
             if isinstance(result, object.ReturnValue):
                 return result.value
             elif isinstance(result, object.Error):
@@ -153,7 +154,6 @@ class Evaluator:
         else:
             return object.Error(f"unknown operator: {operator}{right.type_().value}")
 
-
     def _eval_bang_operator_expression(self, right: object.Object) -> object.Object:
         if right == Evaluator.true:
             return Evaluator.false
@@ -168,13 +168,13 @@ class Evaluator:
         if right.type_() != object.ObjectType.INTEGER:
             return object.Error(f"unknown operator: -{right.type_().value}")
         value = right.value
-        return object.Integer(value = -value)
+        return object.Integer(-value)
 
     def _eval_infix_expression(self, operator: str, left: object.Object, right: object.Object) -> object.Object:
         if left.type_() == object.ObjectType.INTEGER and right.type_() == object.ObjectType.INTEGER:
             return self._eval_integer_infix_expression(operator, left, right)
         elif left.type_() == object.ObjectType.STRING and right.type_() == object.ObjectType.STRING:
-            return self._eval_string_infix_expression(operator, left, right)        
+            return self._eval_string_infix_expression(operator, left, right)
         # For booleans we can use reference comparison to check for equality. It
         # works because of our singleton True and False instances but wouldn't
         # work for integers since they aren't singletons. 5 == 5 would be false
@@ -190,24 +190,24 @@ class Evaluator:
             return object.Error(f"unknown operator: {left.type_().value} {operator} {right.type_().value}")
 
     def _eval_integer_infix_expression(self, operator: str, left: object.Object, right: object.Object) -> object.Object:
-        left_val = left.value # TODO: type assert with mypy or leave lines out
+        left_val = left.value  # TODO: type assert with mypy or leave lines out
         right_val = right.value
         if operator == "+":
-            return object.Integer(value = left_val + right_val)
+            return object.Integer(left_val + right_val)
         elif operator == "-":
-            return object.Integer(value = left_val - right_val)
+            return object.Integer(left_val - right_val)
         elif operator == "*":
-            return object.Integer(value = left_val * right_val)
+            return object.Integer(left_val * right_val)
         elif operator == "/":
-            return object.Integer(value = left_val / right_val)
+            return object.Integer(left_val / right_val)
         elif operator == "<":
             return self._native_bool_to_boolean_object(left_val < right_val)
         elif operator == ">":
             return self._native_bool_to_boolean_object(left_val > right_val)
         elif operator == "==":
-            return self._native_bool_to_boolean_object(left_val == right_val)            
+            return self._native_bool_to_boolean_object(left_val == right_val)
         elif operator == "!=":
-            return self._native_bool_to_boolean_object(left_val != right_val)            
+            return self._native_bool_to_boolean_object(left_val != right_val)
         else:
             return object.Error(f"unknown operator: {left.type_().value} {operator} {right.type_().value}")
 
@@ -232,7 +232,7 @@ class Evaluator:
     def _eval_identifier(self, node: ast.Identifier, env: environment.Environment) -> object.Object:
         value, ok = env.get(node.value)
         if ok:
-            return value       
+            return value
         if node.value in builtin.builtins:
             return builtin.builtins[node.value]
         return object.Error(f"identifier not found: {node.value}")

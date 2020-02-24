@@ -2,11 +2,12 @@ import unittest
 from lexer import Token, TokenType
 from ast import Program, LetStatement, Identifier
 
+
 class AstTest(unittest.TestCase):
     def test_string(self):
-        program = Program(statements = [
+        program = Program([
             LetStatement(
-                Token(type = TokenType.LET, literal = "let"),
+                Token(TokenType.LET, "let"),
                 Identifier(Token(TokenType.IDENT, "myVar"), "myVar"),
                 Identifier(Token(TokenType.IDENT, "anotherVar"), "anotherVar")
             )])

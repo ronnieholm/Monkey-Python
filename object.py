@@ -6,6 +6,7 @@ from typing import List, Dict, Optional, Type, NewType, Callable, Any
 import hashlib
 from collections import namedtuple
 
+
 @unique
 class ObjectType(Enum):
     # Within each Object derived class, we could use type() to get at its Python
@@ -26,17 +27,22 @@ class ObjectType(Enum):
     ARRAY = "ARRAY"
     HASH = "HASH"
 
+
 # Classes in Python have reference semantics which makes any two HashKeys
-# different. namedtyple on the other hand has value sematics. 
-HashKey = namedtuple("HashKey", ["type", "value"]) # // TODO: type: ObjectType, value: int
+# different. namedtyple on the other hand has value sematics.
+# // TODO: type: ObjectType, value: int
+HashKey = namedtuple("HashKey", ["type", "value"])
 
 # TODO: How to force runtime error if method is not implemented? It's currently ignored
+
+
 class Hashable:
     @abstractclassmethod
     def hash_key(self) -> HashKey:
         raise NotImplementedError
 
-class Object:   
+
+class Object:
     @abstractclassmethod
     def type_(self) -> ObjectType:
         raise NotImplementedError
@@ -45,7 +51,8 @@ class Object:
     def inspect(self) -> str:
         raise NotImplementedError
 
-class Integer(Object, Hashable):    
+
+class Integer(Object, Hashable):
     def __init__(self, value: int):
         self.value = value
 
@@ -58,7 +65,8 @@ class Integer(Object, Hashable):
     def hash_key(self) -> HashKey:
         return HashKey(self.type_(), self.value)
 
-class String(Object, Hashable):    
+
+class String(Object, Hashable):
     def __init__(self, value: str):
         self.value = value
 
@@ -70,6 +78,7 @@ class String(Object, Hashable):
 
     def hash_key(self) -> HashKey:
         return HashKey(self.type_(), int(hashlib.md5(self.value.encode("utf-8")).hexdigest(), 16))
+
 
 class Boolean(Object, Hashable):
     def __init__(self, value: bool):
@@ -89,6 +98,8 @@ class Boolean(Object, Hashable):
 
 # Null is a type like Integer and Boolean except it doesn't wrap a value. It
 # represents the absence of a value.
+
+
 class Null(Object):
     def type_(self) -> ObjectType:
         return ObjectType.NULL
@@ -97,8 +108,10 @@ class Null(Object):
         return "null"
 
 # ReturnValue is a wrapper around another Monkey object.
+
+
 class ReturnValue(Object):
-    def __init__(self, value: Object):     
+    def __init__(self, value: Object):
         self.value = value
 
     def type_(self) -> ObjectType:
@@ -113,6 +126,8 @@ class ReturnValue(Object):
 
 # Error wraps a string error message. In a production language, we'd want to
 # attach stack trace and line and column numbers to such error object.
+
+
 class Error(Object):
     def __init__(self, message: str):
         self.message = message
@@ -122,7 +137,8 @@ class Error(Object):
 
     def inspect(self) -> str:
         return f"ERROR: {self.message}"
-    
+
+
 class Function(Object):
     def __init__(self, parameters: List[ast.Identifier], body: ast.BlockStatement, env: Environment):
         self.parameters = parameters
@@ -130,7 +146,7 @@ class Function(Object):
 
         # Functions carry their own environment. This allows for
         # closures to "close over" the environment they're defined in and
-        # allows the function to later access values within the closure.        
+        # allows the function to later access values within the closure.
         self.env = env
 
     def type_(self) -> ObjectType:
@@ -139,6 +155,7 @@ class Function(Object):
     def inspect(self) -> str:
         params = map(lambda p: p.string(), self.parameters)
         return f"fn({', '.join(params)}) {{\n{self.body.string()}\n}}"
+
 
 class Array(Object):
     def __init__(self, elements: List[Object]):
@@ -151,10 +168,12 @@ class Array(Object):
         elements = map(lambda e: e.inspect(), self.elements)
         return f"[{', '.join(elements)}]"
 
+
 class HashPair:
     def __init__(self, key: Object, value: Object) -> None:
         self.key = key
         self.value = value
+
 
 class Hash(Object):
     def __init__(self, pairs: Dict[HashKey, HashPair]) -> None:
@@ -169,7 +188,9 @@ class Hash(Object):
             pairs.append(f"{pair.key.inspect()}: {pair.value.inspect()}")
         return f"{{{', '.join(pairs)}}}"
 
+
 BuiltinFunction = NewType("BuiltinFunction", Callable[[Object], Object])
+
 
 class Builtin(Object):
     def __init__(self, fn: BuiltinFunction):

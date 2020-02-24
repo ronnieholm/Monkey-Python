@@ -1,6 +1,7 @@
 import unittest
 import object
 
+
 class ObjectTests(unittest.TestCase):
     def test_string_hash_key(self):
         hello1 = object.String("Hello World")
@@ -9,7 +10,7 @@ class ObjectTests(unittest.TestCase):
         diff2 = object.String("My name is johnny")
         self.assertEqual(hello1.hash_key(), hello2.hash_key())
         self.assertEqual(diff1.hash_key(), diff2.hash_key())
-    
+
     def test_boolean_hash_key(self):
         hello1 = object.Boolean(True)
         hello2 = object.Boolean(True)
@@ -25,5 +26,3 @@ class ObjectTests(unittest.TestCase):
         diff2 = object.Integer(2)
         self.assertEqual(hello1.hash_key(), hello2.hash_key())
         self.assertEqual(diff1.hash_key(), diff2.hash_key())
-        
-        

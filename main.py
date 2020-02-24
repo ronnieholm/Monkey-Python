@@ -19,6 +19,7 @@ MONKEY_FACE = """            __,__
         '._ '-=-' _.'
            '-----'"""
 
+
 def start() -> None:
     env = Environment()
     user = getpass.getuser()
@@ -33,9 +34,9 @@ def start() -> None:
             if len(line) == 0:
                 continue
         else:
-            with open(sys.argv[1], "r") as file:            
+            with open(sys.argv[1], "r") as file:
                 line = file.read()
-        
+
         l = Lexer(line)
         p = Parser(l)
         program = p.parse_program()
@@ -51,12 +52,14 @@ def start() -> None:
         if len(sys.argv) == 2:
             break
 
+
 def _print_parser_errors(errors: List[str]) -> None:
     print(MONKEY_FACE)
     print("Woops! We ran into some monkey business here!")
     print(" parser errors:")
     for e in errors:
         print(f"\t{e}")
+
 
 if __name__ == "__main__":
     start()

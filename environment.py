@@ -1,5 +1,6 @@
 from typing import Dict
 
+
 class Environment:
     def __init__(self):
         self._store: Dict[str, "Object"] = {}

@@ -1,15 +1,16 @@
 from enum import Enum, unique
 from typing import Dict, Optional
 
+
 @unique
 class TokenType(Enum):
-    ILLEGAL = "ILLEGAL" # Unknown token/character
-    EOF = "EOF"         # End of File stops parsing
+    ILLEGAL = "ILLEGAL"  # Unknown token/character
+    EOF = "EOF"          # End of File stops parsing
 
     # Identifiers and literals
-    IDENT = "IDENT"   # add, foobar, x, y
-    INT = "INT"       # 123
-    STRING = "STRING" # "foo"
+    IDENT = "IDENT"    # add, foobar, x, y
+    INT = "INT"        # 123
+    STRING = "STRING"  # "foo"
 
     # Operators
     ASSIGN = "="
@@ -43,17 +44,19 @@ class TokenType(Enum):
     ELSE = "ELSE"
     RETURN = "RETURN"
 
+
 class Token:
     def __init__(self, type: TokenType, literal: str):
         self.type_ = type
         self.literal = literal
 
+
 class Lexer:
     def __init__(self, input: str):
         self._input = input
-        self._position = 0       # Position in input where last character was read
-        self._read_position = 0  # Position in input where next character is read.
-        self._char: str = ""     # Character under examination.
+        self._position = 0       # Where last character was read
+        self._read_position = 0  # Where next character is read
+        self._char: str = ""     # Character under examination
         self._read_char()
 
     def next_token(self) -> Token:
@@ -65,32 +68,48 @@ class Lexer:
                 self._read_char()
                 tok = Token(TokenType.EQ, char + self._char)
             else:
-                tok = Token(TokenType.ASSIGN, self._char)                
-        elif self._char == "+": tok = Token(TokenType.PLUS, self._char)
-        elif self._char == "-": tok = Token(TokenType.MINUS, self._char)
-        elif self._char == "!": 
+                tok = Token(TokenType.ASSIGN, self._char)
+        elif self._char == "+":
+            tok = Token(TokenType.PLUS, self._char)
+        elif self._char == "-":
+            tok = Token(TokenType.MINUS, self._char)
+        elif self._char == "!":
             if self._peek_char() == "=":
                 char = self._char
                 self._read_char()
                 tok = Token(TokenType.NOT_EQ, char + self._char)
             else:
                 tok = Token(TokenType.BANG, self._char)
-        elif self._char == "*": tok = Token(TokenType.ASTERISK, self._char)
-        elif self._char == "/": tok = Token(TokenType.SLASH, self._char)
-        elif self._char == "<": tok = Token(TokenType.LT, self._char)
-        elif self._char == ">": tok = Token(TokenType.GT, self._char)
-        elif self._char == ",": tok = Token(TokenType.COMMA, self._char)
-        elif self._char == ";": tok = Token(TokenType.SEMICOLON, self._char)
-        elif self._char == "(": tok = Token(TokenType.LPAREN, self._char)
-        elif self._char == ")": tok = Token(TokenType.RPAREN, self._char)
-        elif self._char == "{": tok = Token(TokenType.LBRACE, self._char)
-        elif self._char == "}": tok = Token(TokenType.RBRACE, self._char)
-        elif self._char == "[": tok = Token(TokenType.LBRACKET, self._char)
-        elif self._char == "]": tok = Token(TokenType.RBRACKET, self._char)
-        elif self._char == ":": tok = Token(TokenType.COLON, self._char)
+        elif self._char == "*":
+            tok = Token(TokenType.ASTERISK, self._char)
+        elif self._char == "/":
+            tok = Token(TokenType.SLASH, self._char)
+        elif self._char == "<":
+            tok = Token(TokenType.LT, self._char)
+        elif self._char == ">":
+            tok = Token(TokenType.GT, self._char)
+        elif self._char == ",":
+            tok = Token(TokenType.COMMA, self._char)
+        elif self._char == ";":
+            tok = Token(TokenType.SEMICOLON, self._char)
+        elif self._char == "(":
+            tok = Token(TokenType.LPAREN, self._char)
+        elif self._char == ")":
+            tok = Token(TokenType.RPAREN, self._char)
+        elif self._char == "{":
+            tok = Token(TokenType.LBRACE, self._char)
+        elif self._char == "}":
+            tok = Token(TokenType.RBRACE, self._char)
+        elif self._char == "[":
+            tok = Token(TokenType.LBRACKET, self._char)
+        elif self._char == "]":
+            tok = Token(TokenType.RBRACKET, self._char)
+        elif self._char == ":":
+            tok = Token(TokenType.COLON, self._char)
         elif self._char == '"':
             tok = Token(TokenType.STRING, self._read_string())
-        elif self._char == "\0": tok = Token(TokenType.EOF, "")
+        elif self._char == "\0":
+            tok = Token(TokenType.EOF, "")
         else:
             if self._is_letter(self._char):
                 literal = self._read_identifier()
@@ -114,7 +133,7 @@ class Lexer:
             self._char = "\0"
         else:
             self._char = self._input[self._read_position]
-        
+
         self._position = self._read_position
         self._read_position += 1
 
@@ -123,7 +142,7 @@ class Lexer:
 
         # BUG: Passing a string which isn't " terminated causes an infinite loop
         # because even though we reached the end of input, the " characters
-        # hasn't been reached.        
+        # hasn't been reached.
         while True:
             self._read_char()
             if self._char == '"':
@@ -165,8 +184,8 @@ class Lexer:
     }
 
     @staticmethod
-    def _lookup_ident(ident: str) -> TokenType:        
-        if ident in Lexer.keywords: 
+    def _lookup_ident(ident: str) -> TokenType:
+        if ident in Lexer.keywords:
             return Lexer.keywords[ident]
-        else: 
+        else:
             return TokenType.IDENT

@@ -35,7 +35,7 @@ tests and [Examples](Examples) folder in this repository.
     $ cd Monkey-Python
     $ python3 -m venv venv
     $ source venv/bin/activate
-    $ pip3 install -r requirements.txt
+    $ pip3 install -r requirements-dev.txt
     $ mypy *.py
     $ python3 -m unittest *test.py
     $ python3 main.py
@@ -43,9 +43,10 @@ tests and [Examples](Examples) folder in this repository.
     $ deactivate
 
 <!--
-Creating requirements.txt after creating venv above
+Creating requirements-dev.txt after creating venv above
 pip3 install mypy
-pip3 freeze > requirements.txt
+pip3 freeze > requirements-dev.txt
+python3 -m cProfile main.py examples/fibonacci.monkey
 -->
 
 ## Resources

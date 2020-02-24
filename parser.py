@@ -7,8 +7,11 @@ from typing import List, Callable, NewType, Dict, Union, Optional, Type
 # call stack when it's hit, effectively show the Abstract Syntax Tree at that
 # point during parsing.
 
-PrefixParseFn = NewType("PrefixParseFn", Callable[[], ast.Expression])
-InfixParseFn = NewType("InfixParseFn", Callable[[ast.Expression], ast.Expression])
+PrefixParseFn = NewType(
+    "PrefixParseFn", Callable[[], ast.Expression])
+InfixParseFn = NewType(
+    "InfixParseFn", Callable[[ast.Expression], ast.Expression])
+
 
 @unique
 class Precedence_level(Enum):
@@ -16,15 +19,16 @@ class Precedence_level(Enum):
     # parsing we want to answer questions such as whether product has higher
     # precedence than equals.
     LOWEST = 0
-    EQUALS = 1      # ==
-    LESSGREATER = 2 # < or >
-    SUM = 3         # +
-    PRODUCT = 4     # *
-    PREFIX = 5      # -x or !x
-    CALL = 6        # myFunction(x)
-    INDEX = 7       # array[index]
+    EQUALS = 1       # ==
+    LESSGREATER = 2  # < or >
+    SUM = 3          # +
+    PRODUCT = 4      # *
+    PREFIX = 5       # -x or !x
+    CALL = 6         # myFunction(x)
+    INDEX = 7        # array[index]
 
-# TODO: Precedence probably should be lower cased 
+# TODO: Precedence probably should be lower cased
+
 
 # Table of precedence to map token type to precedence level. Not every
 # precedence level is present (Lowest and Prefix) and some precedence levels
@@ -45,8 +49,9 @@ Precedence: dict = {
     TokenType.LBRACKET: Precedence_level.INDEX
 }
 
+
 class Parser:
-    def __init__(self, lexer: Lexer):       
+    def __init__(self, lexer: Lexer):
         self.errors: List[str] = []
         self._lexer = lexer
 
@@ -106,13 +111,11 @@ class Parser:
 
     def parse_program(self) -> ast.Program:
         program = ast.Program()
-
         while not self._current_token_is(TokenType.EOF):
             stmt = self._parse_statement()
             if stmt != None:
-                program.statements.append(stmt)            
+                program.statements.append(stmt)
             self._next_token()
-        
         return program
 
     def _parse_statement(self) -> Optional[Type[ast.Node]]:
@@ -141,7 +144,7 @@ class Parser:
         t = self._current_token.type_
         if not t in self._prefix_parse_fns:
             self._no_prefix_parse_fn_error(self._current_token.type_)
-            return None          
+            return None
         leftExpr = self._prefix_parse_fns[t]()
 
         # precedence.value is what the Pratt paper refers to as right-binding
@@ -155,11 +158,10 @@ class Parser:
                 return leftExpr
             self._next_token()
             leftExpr = self._infix_parse_fns[peek](leftExpr)
-
         return leftExpr
 
     def _parse_identifier(self) -> ast.Identifier:
-        return ast.Identifier(token = self._current_token, value = self._current_token.literal)
+        return ast.Identifier(self._current_token, self._current_token.literal)
 
     def _parse_integer_literal(self) -> Optional[ast.Expression]:
         token = self._current_token
@@ -169,7 +171,6 @@ class Parser:
             message = f"could not parse {token.literal} as integer"
             self.errors.append(message)
             return None
-            
         return ast.IntegerLiteral(token, value)
 
     def _parse_string_literal(self) -> ast.Expression:
@@ -181,13 +182,15 @@ class Parser:
             self._next_token()
             return identifiers
         self._next_token()
-        ident = ast.Identifier(token = self._current_token, value = self._current_token.literal)
+        ident = ast.Identifier(self._current_token,
+                               self._current_token.literal)
         identifiers.append(ident)
         while self._peek_token_is(TokenType.COMMA):
             self._next_token()
             self._next_token()
-            ident = ast.Identifier(token = self._current_token, value = self._current_token.literal)
-            identifiers.append(ident)       
+            ident = ast.Identifier(self._current_token,
+                                   self._current_token.literal)
+            identifiers.append(ident)
         if not self._expect_peek(TokenType.RPAREN):
             return None
         return identifiers
@@ -238,7 +241,8 @@ class Parser:
             return None
         return expr
 
-    def _parse_if_expression(self) -> Optional[ast.Expression]: # TODO: why not return If_expression?
+    # TODO: why not return If_expression?
+    def _parse_if_expression(self) -> Optional[ast.Expression]:
         token = self._current_token
         if not self._expect_peek(TokenType.LPAREN):
             return None
@@ -256,9 +260,9 @@ class Parser:
             alternative = self._parse_block_statement()
         else:
             alternative = None
-        return ast.IfExpression(token, condition, consequence, alternative)        
+        return ast.IfExpression(token, condition, consequence, alternative)
 
-    def _parse_block_statement(self) -> ast.BlockStatement:        
+    def _parse_block_statement(self) -> ast.BlockStatement:
         token = self._current_token
         statements = []
         self._next_token()
@@ -269,7 +273,8 @@ class Parser:
             self._next_token()
         return ast.BlockStatement(token, statements)
 
-    def _parse_function_literal(self) -> Optional[ast.Expression]: # TODO: Why not Function_literal?
+    # TODO: Why not Function_literal?
+    def _parse_function_literal(self) -> Optional[ast.Expression]:
         token = self._current_token
         if not self._expect_peek(TokenType.LPAREN):
             return None
@@ -310,10 +315,10 @@ class Parser:
     def _parse_prefix_expression(self) -> ast.Expression:
         token = self._current_token
         self._next_token()
-        right = self._parse_expression(Precedence_level.PREFIX)        
+        right = self._parse_expression(Precedence_level.PREFIX)
         return ast.PrefixExpression(token, token.literal, right)
 
-    def _parse_infix_expression(self, left: ast.Expression = None) -> ast.Expression:    
+    def _parse_infix_expression(self, left: ast.Expression) -> ast.Expression:
         token = self._current_token
         precedence = self._current_precedence()
         self._next_token()
@@ -323,7 +328,7 @@ class Parser:
     def _parse_let_statement(self) -> Optional[ast.LetStatement]:
         token = self._current_token
         if not self._expect_peek(TokenType.IDENT):
-            return None        
+            return None
         name = ast.Identifier(self._current_token, self._current_token.literal)
         if not self._expect_peek(TokenType.ASSIGN):
             return None
@@ -334,7 +339,7 @@ class Parser:
         return ast.LetStatement(token, name, value)
 
     def _parse_boolean(self) -> ast.Boolean:
-        return ast.Boolean(self._current_token, value = self._current_token_is(TokenType.TRUE))
+        return ast.Boolean(self._current_token, self._current_token_is(TokenType.TRUE))
 
     def _parse_return_statement(self) -> ast.ReturnStatement:
         token = self._current_token
@@ -361,7 +366,7 @@ class Parser:
     def _peek_error(self, t: TokenType) -> None:
         message = f"expected next token to be {t.value}. Got {self._peek_token.type_.value} instead"
         self.errors.append(message)
-   
+
     def _no_prefix_parse_fn_error(self, t: TokenType) -> None:
         message = f"no prefix parse function for {t.value} found"
         self.errors.append(message)
@@ -372,7 +377,7 @@ class Parser:
         # Returning LOWEST when precedence level could not be determined enables
         # us to parse grouped expression. The RParen token doesn't have an
         # associated precedence, and returning LOWEST is what causes the parser
-        # to finish evaluating a subexpression as a whole.        
+        # to finish evaluating a subexpression as a whole.
         if t in Precedence:
             return Precedence[t]
         return Precedence_level.LOWEST
@@ -382,4 +387,3 @@ class Parser:
         if t in Precedence:
             return Precedence[t]
         return Precedence_level.LOWEST
-  
