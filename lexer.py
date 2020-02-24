@@ -8,9 +8,9 @@ class TokenType(Enum):
     EOF = "EOF"          # End of File stops parsing
 
     # Identifiers and literals
-    IDENT = "IDENT"    # add, foobar, x, y
-    INT = "INT"        # 123
-    STRING = "STRING"  # "foo"
+    IDENT = "IDENT"      # add, foobar, x, y
+    INT = "INT"          # 123
+    STRING = "STRING"    # "foo"
 
     # Operators
     ASSIGN = "="

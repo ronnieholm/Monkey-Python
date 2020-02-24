@@ -9,7 +9,5 @@ class AstTest(unittest.TestCase):
             LetStatement(
                 Token(TokenType.LET, "let"),
                 Identifier(Token(TokenType.IDENT, "myVar"), "myVar"),
-                Identifier(Token(TokenType.IDENT, "anotherVar"), "anotherVar")
-            )])
-
+                Identifier(Token(TokenType.IDENT, "anotherVar"), "anotherVar"))])
         self.assertEqual(program.string(), "let myVar = anotherVar;")

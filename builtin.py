@@ -2,7 +2,7 @@ from typing import List, Union, NewType, Callable, Dict
 import monkey_object
 
 
-def _len_built_in(args: List[monkey_object.MonkeyObject]) -> Union[monkey_object.Integer, monkey_object.Error]:
+def _len(args: List[monkey_object.MonkeyObject]) -> Union[monkey_object.Integer, monkey_object.Error]:
     if len(args) != 1:
         return monkey_object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
     if isinstance(args[0], monkey_object.String):
@@ -12,7 +12,7 @@ def _len_built_in(args: List[monkey_object.MonkeyObject]) -> Union[monkey_object
     return monkey_object.Error(f"argument to 'len' not supported. Got {args[0].type_().value}")
 
 
-def _first_built_in(args: List[monkey_object.MonkeyObject]) -> monkey_object.MonkeyObject:
+def _first(args: List[monkey_object.MonkeyObject]) -> monkey_object.MonkeyObject:
     from evaluator import Evaluator
     if len(args) != 1:
         return monkey_object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
@@ -24,7 +24,7 @@ def _first_built_in(args: List[monkey_object.MonkeyObject]) -> monkey_object.Mon
     return Evaluator.null
 
 
-def _last_built_in(args: List[monkey_object.Array]) -> monkey_object.MonkeyObject:
+def _last(args: List[monkey_object.Array]) -> monkey_object.MonkeyObject:
     from evaluator import Evaluator
     if len(args) != 1:
         return monkey_object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
@@ -37,7 +37,7 @@ def _last_built_in(args: List[monkey_object.Array]) -> monkey_object.MonkeyObjec
     return Evaluator.null
 
 
-def _rest_built_in(args: List[monkey_object.Array]) -> monkey_object.MonkeyObject:
+def _rest(args: List[monkey_object.Array]) -> monkey_object.MonkeyObject:
     from evaluator import Evaluator
     if len(args) != 1:
         return monkey_object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
@@ -51,7 +51,7 @@ def _rest_built_in(args: List[monkey_object.Array]) -> monkey_object.MonkeyObjec
     return Evaluator.null
 
 
-def _push_built_in(args: List[monkey_object.Array]) -> monkey_object.MonkeyObject:
+def _push(args: List[monkey_object.Array]) -> monkey_object.MonkeyObject:
     if len(args) != 2:
         return monkey_object.Error(f"wrong number of arguments. Got {len(args)}, want 2")
     if args[0].type_() != monkey_object.ObjectType.ARRAY:
@@ -64,7 +64,7 @@ def _push_built_in(args: List[monkey_object.Array]) -> monkey_object.MonkeyObjec
 
 
 # TODO: why not monkey_object.Null?
-def _puts_built_in(args: List[monkey_object.MonkeyObject]) -> monkey_object.MonkeyObject:
+def _puts(args: List[monkey_object.MonkeyObject]) -> monkey_object.MonkeyObject:
     from evaluator import Evaluator
     for arg in args:
         print(arg.inspect())
@@ -73,11 +73,12 @@ def _puts_built_in(args: List[monkey_object.MonkeyObject]) -> monkey_object.Monk
 
 BuiltinFunction = NewType(
     "BuiltinFunction", Callable[[monkey_object.MonkeyObject], monkey_object.MonkeyObject])
+
 builtins: Dict[str, BuiltinFunction] = {
-    "len": monkey_object.Builtin(_len_built_in),
-    "first": monkey_object.Builtin(_first_built_in),
-    "last": monkey_object.Builtin(_last_built_in),
-    "rest": monkey_object.Builtin(_rest_built_in),
-    "push": monkey_object.Builtin(_push_built_in),
-    "puts": monkey_object.Builtin(_puts_built_in)
+    "len": monkey_object.Builtin(_len),
+    "first": monkey_object.Builtin(_first),
+    "last": monkey_object.Builtin(_last),
+    "rest": monkey_object.Builtin(_rest),
+    "push": monkey_object.Builtin(_push),
+    "puts": monkey_object.Builtin(_puts)
 }
