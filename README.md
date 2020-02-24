@@ -47,6 +47,7 @@ Creating requirements-dev.txt after creating venv above
 pip3 install mypy
 pip3 freeze > requirements-dev.txt
 python3 -m cProfile main.py examples/fibonacci.monkey
+pylint *py
 -->
 
 ## Resources

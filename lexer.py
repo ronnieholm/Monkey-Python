@@ -46,14 +46,14 @@ class TokenType(Enum):
 
 
 class Token:
-    def __init__(self, type: TokenType, literal: str):
-        self.type_ = type
+    def __init__(self, type_: TokenType, literal: str):
+        self.type_ = type_
         self.literal = literal
 
 
 class Lexer:
-    def __init__(self, input: str):
-        self._input = input
+    def __init__(self, source: str):
+        self._source = source
         self._position = 0       # Where last character was read
         self._read_position = 0  # Where next character is read
         self._char: str = ""     # Character under examination
@@ -115,11 +115,10 @@ class Lexer:
                 literal = self._read_identifier()
                 type_ = Lexer._lookup_ident(literal)
                 return Token(type_, literal)
-            elif self._is_digit(self._char):
+            if self._is_digit(self._char):
                 literal = self._read_number()
                 return Token(TokenType.INT, literal)
-            else:
-                tok = Token(TokenType.ILLEGAL, self._char)
+            tok = Token(TokenType.ILLEGAL, self._char)
 
         self._read_char()
         return tok
@@ -129,10 +128,10 @@ class Lexer:
             self._read_char()
 
     def _read_char(self) -> None:
-        if self._read_position >= len(self._input):
+        if self._read_position >= len(self._source):
             self._char = "\0"
         else:
-            self._char = self._input[self._read_position]
+            self._char = self._source[self._read_position]
 
         self._position = self._read_position
         self._read_position += 1
@@ -147,19 +146,19 @@ class Lexer:
             self._read_char()
             if self._char == '"':
                 break
-        return self._input[position:self._position]
+        return self._source[position:self._position]
 
     def _read_number(self) -> str:
         position = self._position
         while self._is_digit(self._char):
             self._read_char()
-        return self._input[position:self._position]
+        return self._source[position:self._position]
 
     def _read_identifier(self) -> str:
         position = self._position
         while self._is_letter(self._char):
             self._read_char()
-        return self._input[position:self._position]
+        return self._source[position:self._position]
 
     def _is_letter(self, char: str) -> bool:
         return "a" <= char and char <= "z" or "A" <= char and char <= "Z" or char == "_"
@@ -168,10 +167,9 @@ class Lexer:
         return "0" <= char and char <= "9"
 
     def _peek_char(self) -> Optional[str]:
-        if self._read_position >= len(self._input):
+        if self._read_position >= len(self._source):
             return None
-        else:
-            return self._input[self._read_position]
+        return self._source[self._read_position]
 
     keywords: Dict[str, TokenType] = {
         "fn": TokenType.FUNCTION,
@@ -187,5 +185,4 @@ class Lexer:
     def _lookup_ident(ident: str) -> TokenType:
         if ident in Lexer.keywords:
             return Lexer.keywords[ident]
-        else:
-            return TokenType.IDENT
+        return TokenType.IDENT

@@ -1,10 +1,10 @@
 from enum import Enum, unique
-from abc import ABC, abstractclassmethod
-import ast
-from environment import Environment
-from typing import List, Dict, Optional, Type, NewType, Callable, Any
+from abc import abstractclassmethod
+from typing import List, Dict, NewType, Callable
 import hashlib
 from collections import namedtuple
+import ast
+from environment import Environment
 
 
 @unique
@@ -38,21 +38,21 @@ HashKey = namedtuple("HashKey", ["type", "value"])
 
 class Hashable:
     @abstractclassmethod
-    def hash_key(self) -> HashKey:
+    def hash_key(cls) -> HashKey:
         raise NotImplementedError
 
 
-class Object:
+class MonkeyObject:
     @abstractclassmethod
-    def type_(self) -> ObjectType:
+    def type_(cls) -> ObjectType:
         raise NotImplementedError
 
     @abstractclassmethod
-    def inspect(self) -> str:
+    def inspect(cls) -> str:
         raise NotImplementedError
 
 
-class Integer(Object, Hashable):
+class Integer(MonkeyObject, Hashable):
     def __init__(self, value: int):
         self.value = value
 
@@ -66,7 +66,7 @@ class Integer(Object, Hashable):
         return HashKey(self.type_(), self.value)
 
 
-class String(Object, Hashable):
+class String(MonkeyObject, Hashable):
     def __init__(self, value: str):
         self.value = value
 
@@ -80,7 +80,7 @@ class String(Object, Hashable):
         return HashKey(self.type_(), int(hashlib.md5(self.value.encode("utf-8")).hexdigest(), 16))
 
 
-class Boolean(Object, Hashable):
+class Boolean(MonkeyObject, Hashable):
     def __init__(self, value: bool):
         self.value = value
 
@@ -100,7 +100,7 @@ class Boolean(Object, Hashable):
 # represents the absence of a value.
 
 
-class Null(Object):
+class Null(MonkeyObject):
     def type_(self) -> ObjectType:
         return ObjectType.NULL
 
@@ -110,8 +110,8 @@ class Null(Object):
 # ReturnValue is a wrapper around another Monkey object.
 
 
-class ReturnValue(Object):
-    def __init__(self, value: Object):
+class ReturnValue(MonkeyObject):
+    def __init__(self, value: MonkeyObject):
         self.value = value
 
     def type_(self) -> ObjectType:
@@ -121,14 +121,14 @@ class ReturnValue(Object):
         # Satisfies mypy that infinite recursion cannot happen. Passing
         # Return_value is possible type system wise given Object
         # constraint, and type hints doesn't support exclusing single type.
-        assert(not isinstance(self, ReturnValue))
+        assert not isinstance(self, ReturnValue)
         return self.value.inspect()
 
 # Error wraps a string error message. In a production language, we'd want to
 # attach stack trace and line and column numbers to such error object.
 
 
-class Error(Object):
+class Error(MonkeyObject):
     def __init__(self, message: str):
         self.message = message
 
@@ -139,7 +139,7 @@ class Error(Object):
         return f"ERROR: {self.message}"
 
 
-class Function(Object):
+class Function(MonkeyObject):
     def __init__(self, parameters: List[ast.Identifier], body: ast.BlockStatement, env: Environment):
         self.parameters = parameters
         self.body = body
@@ -157,8 +157,8 @@ class Function(Object):
         return f"fn({', '.join(params)}) {{\n{self.body.string()}\n}}"
 
 
-class Array(Object):
-    def __init__(self, elements: List[Object]):
+class Array(MonkeyObject):
+    def __init__(self, elements: List[MonkeyObject]):
         self.elements = elements
 
     def type_(self) -> ObjectType:
@@ -170,12 +170,12 @@ class Array(Object):
 
 
 class HashPair:
-    def __init__(self, key: Object, value: Object) -> None:
+    def __init__(self, key: MonkeyObject, value: MonkeyObject) -> None:
         self.key = key
         self.value = value
 
 
-class Hash(Object):
+class Hash(MonkeyObject):
     def __init__(self, pairs: Dict[HashKey, HashPair]) -> None:
         self.pairs = pairs
 
@@ -189,12 +189,13 @@ class Hash(Object):
         return f"{{{', '.join(pairs)}}}"
 
 
-BuiltinFunction = NewType("BuiltinFunction", Callable[[Object], Object])
+BuiltinFunction = NewType(
+    "BuiltinFunction", Callable[[MonkeyObject], MonkeyObject])
 
 
-class Builtin(Object):
-    def __init__(self, fn: BuiltinFunction):
-        self.fn = fn
+class Builtin(MonkeyObject):
+    def __init__(self, function: BuiltinFunction):
+        self.function = function
 
     def type_(self) -> ObjectType:
         return ObjectType.BUILTIN

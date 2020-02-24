@@ -13,17 +13,17 @@ class Environment:
         return env
 
     def get(self, name: str) -> "Optional[(Object, bool)]":
-        ok = name in self._store.keys()
+        found = name in self._store.keys()
         obj = None
-        if ok:
+        if found:
             obj = self._store[name]
-        elif self.outer != None:
+        elif self.outer is not None:
             # If current environment doesn't have a value associated with a
             # name, we recursively call get on enclosing environment (which the
             # current environment is extending) until either name is found or
             # caller can issue a "unknown identifier" error.
-            obj, ok = self.outer.get(name)
-        return obj, ok
+            obj, found = self.outer.get(name)
+        return obj, found
 
     def set(self, name: str, value: "Object") -> "Object":
         self._store[name] = value

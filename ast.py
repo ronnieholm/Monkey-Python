@@ -1,17 +1,17 @@
 from abc import ABC, abstractclassmethod
-from typing import List, Optional, Dict, Type
-from lexer import Token
+from typing import List, Optional, Dict
 from functools import reduce
+from lexer import Token
 
 
 class Node(ABC):
     @abstractclassmethod
-    def token_literal(self) -> Optional[str]:
+    def token_literal(cls) -> Optional[str]:
         # For debugging and testing.
         raise NotImplementedError
 
     @abstractclassmethod
-    def string(self) -> str:
+    def string(cls) -> str:
         # We don't override __str__ or __repr__ to make string calls explicit.
         raise NotImplementedError
 
@@ -72,7 +72,7 @@ class LetStatement(Statement):
         # None member. This happens when attempting to call Program.string() on
         # a program with parse errors. Program.string() isn't called by tests
         # nor main.py, but may be enabled during debugging.
-        if self.value != None:
+        if self.value is not None:
             out += self.value.string()
         return out + ";"
 
@@ -84,7 +84,7 @@ class ReturnStatement(Statement):
 
     def string(self) -> str:
         out = f"{self.token_literal()} "
-        if self.return_value != None:
+        if self.return_value is not None:
             out += self.return_value.string()
         return out + ";"
 
@@ -96,7 +96,7 @@ class ExpressionStatement(Expression):
 
     def string(self) -> str:
         expr = self.expression
-        return expr.string() if expr != None else ""
+        return expr.string() if expr is not None else ""
 
 
 class IntegerLiteral(Expression):
@@ -153,7 +153,7 @@ class IfExpression(Expression):
 
     def string(self) -> str:
         out = f"if {self.condition.string()} {{ {self.consequence.string()} }}"
-        if self.alternative != None:
+        if self.alternative is not None:
             out += f" else {{ {self.alternative.string()} }}"
         return out
 
@@ -207,9 +207,9 @@ class IndexExpression(Expression):
 
 
 class HashLiteral(Expression):
-    from object import Object
+    from monkey_object import MonkeyObject
 
-    def __init__(self, token: Token, pairs: Dict[Object, Object]):
+    def __init__(self, token: Token, pairs: Dict[MonkeyObject, MonkeyObject]):
         super(HashLiteral, self).__init__(token)
         self.pairs = pairs
 

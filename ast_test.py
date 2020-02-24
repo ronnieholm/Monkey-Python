@@ -1,6 +1,6 @@
 import unittest
-from lexer import Token, TokenType
 from ast import Program, LetStatement, Identifier
+from lexer import Token, TokenType
 
 
 class AstTest(unittest.TestCase):

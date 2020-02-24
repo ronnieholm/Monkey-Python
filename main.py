@@ -1,10 +1,10 @@
-from lexer import Lexer, TokenType
-from parser import Parser
-from evaluator import Evaluator
-from object import Environment
 from typing import List
 import getpass
 import sys
+from parser import Parser
+from lexer import Lexer
+from evaluator import Evaluator
+from environment import Environment
 
 PROMPT = ">> "
 MONKEY_FACE = """            __,__
@@ -37,18 +37,17 @@ def start() -> None:
             with open(sys.argv[1], "r") as file:
                 line = file.read()
 
-        l = Lexer(line)
-        p = Parser(l)
-        program = p.parse_program()
-        if len(p.errors) != 0:
-            _print_parser_errors(p.errors)
+        lexer = Lexer(line)
+        parser = Parser(lexer)
+        program = parser.parse_program()
+        if len(parser.errors) != 0:
+            _print_parser_errors(parser.errors)
             continue
 
         evaluator = Evaluator()
         evaluated = evaluator.eval(program, env)
-        if evaluated != None:
+        if evaluated is not None:
             print(evaluated.inspect())
-
         if len(sys.argv) == 2:
             break
 
@@ -57,8 +56,8 @@ def _print_parser_errors(errors: List[str]) -> None:
     print(MONKEY_FACE)
     print("Woops! We ran into some monkey business here!")
     print(" parser errors:")
-    for e in errors:
-        print(f"\t{e}")
+    for error in errors:
+        print(f"\t{error}")
 
 
 if __name__ == "__main__":

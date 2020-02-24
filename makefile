@@ -1,4 +1,4 @@
-default: test mypy repl
+default: test mypy mylint repl
 
 repl:
 	python3 main.py
@@ -8,6 +8,9 @@ test:
 
 mypy:
 	mypy *.py
+
+lint:
+	pylint *.py
 
 clean:
 	rm -fr __pycache__

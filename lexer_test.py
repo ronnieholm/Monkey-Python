@@ -5,29 +5,29 @@ from lexer import Lexer, TokenType
 
 class LexerTest(unittest.TestCase):
     def test_next_token(self):
-        input = """let five = 5;
-                   let ten = 10;
-                   
-                   let add = fn(x, y) {
-                     x + y;
-                   };
-                   
-                   let result = add(five, ten);
-                   !-/*5;
-                   5 < 10 > 5;
-                   
-                   if (5 < 10) {
-                   	return true;
-                   } else {
-                   	return false;
-                   }
-                   
-                   10 == 10;
-                   10 != 9;
-                   "foobar"
-                   "foo bar"
-                   [1, 2];
-                   {"foo": "bar"}"""
+        source = """let five = 5;
+                    let ten = 10;
+                    
+                    let add = fn(x, y) {
+                      x + y;
+                    };
+                    
+                    let result = add(five, ten);
+                    !-/*5;
+                    5 < 10 > 5;
+                    
+                    if (5 < 10) {
+                    	return true;
+                    } else {
+                    	return false;
+                    }
+                    
+                    10 == 10;
+                    10 != 9;
+                    "foobar"
+                    "foo bar"
+                    [1, 2];
+                    {"foo": "bar"}"""
         Case = namedtuple(
             "Case", ["expected_token_type", "expected_token_literal"])
         tests = [
@@ -119,8 +119,8 @@ class LexerTest(unittest.TestCase):
             Case(TokenType.RBRACE, "}"),
             Case(TokenType.EOF, "")]
 
-        lexer = Lexer(input)
-        for t in tests:
+        lexer = Lexer(source)
+        for test in tests:
             token_ = lexer.next_token()
-            self.assertEqual(token_.type_, t.expected_token_type)
-            self.assertEqual(token_.literal, t.expected_token_literal)
+            self.assertEqual(token_.type_, test.expected_token_type)
+            self.assertEqual(token_.literal, test.expected_token_literal)

@@ -1,7 +1,7 @@
 from enum import Enum, unique
+from typing import List, Callable, NewType, Dict, Optional, Type
 import ast
 from lexer import Lexer, Token, TokenType
-from typing import List, Callable, NewType, Dict, Union, Optional, Type
 
 # TIP: Setting a breakpoint in one of the parsing methods and inspecting the
 # call stack when it's hit, effectively show the Abstract Syntax Tree at that
@@ -14,7 +14,7 @@ InfixParseFn = NewType(
 
 
 @unique
-class Precedence_level(Enum):
+class PrecedenceLevel(Enum):
     # It's the relative and not absolute values of levels that matter. During
     # parsing we want to answer questions such as whether product has higher
     # precedence than equals.
@@ -27,8 +27,6 @@ class Precedence_level(Enum):
     CALL = 6         # myFunction(x)
     INDEX = 7        # array[index]
 
-# TODO: Precedence probably should be lower cased
-
 
 # Table of precedence to map token type to precedence level. Not every
 # precedence level is present (Lowest and Prefix) and some precedence levels
@@ -37,16 +35,16 @@ class Precedence_level(Enum):
 # but an expression as a whole. On the other hand some operators such as
 # multiplication and division share precedence level.
 Precedence: dict = {
-    TokenType.EQ: Precedence_level.EQUALS,
-    TokenType.NOT_EQ: Precedence_level.EQUALS,
-    TokenType.LT: Precedence_level.LESSGREATER,
-    TokenType.GT: Precedence_level.LESSGREATER,
-    TokenType.PLUS: Precedence_level.SUM,
-    TokenType.MINUS: Precedence_level.SUM,
-    TokenType.SLASH: Precedence_level.PRODUCT,
-    TokenType.ASTERISK: Precedence_level.PRODUCT,
-    TokenType.LPAREN: Precedence_level.CALL,
-    TokenType.LBRACKET: Precedence_level.INDEX
+    TokenType.EQ: PrecedenceLevel.EQUALS,
+    TokenType.NOT_EQ: PrecedenceLevel.EQUALS,
+    TokenType.LT: PrecedenceLevel.LESSGREATER,
+    TokenType.GT: PrecedenceLevel.LESSGREATER,
+    TokenType.PLUS: PrecedenceLevel.SUM,
+    TokenType.MINUS: PrecedenceLevel.SUM,
+    TokenType.SLASH: PrecedenceLevel.PRODUCT,
+    TokenType.ASTERISK: PrecedenceLevel.PRODUCT,
+    TokenType.LPAREN: PrecedenceLevel.CALL,
+    TokenType.LBRACKET: PrecedenceLevel.INDEX
 }
 
 
@@ -99,11 +97,11 @@ class Parser:
         self._register_infix(TokenType.LPAREN, self._parse_call_expression)
         self._register_infix(TokenType.LBRACKET, self._parse_index_expression)
 
-    def _register_prefix(self, type: TokenType, fn: PrefixParseFn) -> None:
-        self._prefix_parse_fns[type] = fn
+    def _register_prefix(self, type_: TokenType, function: PrefixParseFn) -> None:
+        self._prefix_parse_fns[type_] = function
 
-    def _register_infix(self, type: TokenType, fn: InfixParseFn) -> None:
-        self._infix_parse_fns[type] = fn
+    def _register_infix(self, type_: TokenType, function: InfixParseFn) -> None:
+        self._infix_parse_fns[type_] = function
 
     def _next_token(self) -> None:
         self._current_token = self._peek_token
@@ -113,7 +111,7 @@ class Parser:
         program = ast.Program()
         while not self._current_token_is(TokenType.EOF):
             stmt = self._parse_statement()
-            if stmt != None:
+            if stmt is not None:
                 program.statements.append(stmt)
             self._next_token()
         return program
@@ -121,31 +119,31 @@ class Parser:
     def _parse_statement(self) -> Optional[Type[ast.Node]]:
         if self._current_token.type_ == TokenType.LET:
             return self._parse_let_statement()
-        elif self._current_token.type_ == TokenType.RETURN:
+        if self._current_token.type_ == TokenType.RETURN:
             return self._parse_return_statement()
-        else:
-            # The only two real statement types in Monkey are let and return. If
-            # none of those got matched, try to parse input as a pseudo
-            # ExpressionStatement.
-            return self._parse_expression_statement()
+
+        # The only two real statement types in Monkey are let and return. If
+        # none of those got matched, try to parse input as a pseudo
+        # ExpressionStatement.
+        return self._parse_expression_statement()
 
     def _parse_expression_statement(self) -> ast.ExpressionStatement:
         token = self._current_token
 
         # Pass in lowest precedence level since we haven't parsed anything yet.
-        expression = self._parse_expression(Precedence_level.LOWEST)
+        expression = self._parse_expression(PrecedenceLevel.LOWEST)
 
         # Expression statements end with optional semicolon.
         if self._peek_token_is(TokenType.SEMICOLON):
             self._next_token()
         return ast.ExpressionStatement(token, expression)
 
-    def _parse_expression(self, precedence: Precedence_level) -> Optional[ast.Expression]:
-        t = self._current_token.type_
-        if not t in self._prefix_parse_fns:
+    def _parse_expression(self, precedence: PrecedenceLevel) -> Optional[ast.Expression]:
+        type_ = self._current_token.type_
+        if not type_ in self._prefix_parse_fns:
             self._no_prefix_parse_fn_error(self._current_token.type_)
             return None
-        leftExpr = self._prefix_parse_fns[t]()
+        left_expr = self._prefix_parse_fns[type_]()
 
         # precedence.value is what the Pratt paper refers to as right-binding
         # power and _peek_precedence is what it refers to as left-binding power.
@@ -155,10 +153,10 @@ class Parser:
         while not self._peek_token_is(TokenType.SEMICOLON) and precedence.value < self._peek_precedence().value:
             peek = self._peek_token.type_
             if not peek in self._infix_parse_fns:
-                return leftExpr
+                return left_expr
             self._next_token()
-            leftExpr = self._infix_parse_fns[peek](leftExpr)
-        return leftExpr
+            left_expr = self._infix_parse_fns[peek](left_expr)
+        return left_expr
 
     def _parse_identifier(self) -> ast.Identifier:
         return ast.Identifier(self._current_token, self._current_token.literal)
@@ -203,11 +201,11 @@ class Parser:
             self._next_token()
             return list_
         self._next_token()
-        list_.append(self._parse_expression(Precedence_level.LOWEST))
+        list_.append(self._parse_expression(PrecedenceLevel.LOWEST))
         while self._peek_token_is(TokenType.COMMA):
             self._next_token()
             self._next_token()
-            list_.append(self._parse_expression(Precedence_level.LOWEST))
+            list_.append(self._parse_expression(PrecedenceLevel.LOWEST))
         if not self._expect_peek(end):
             return None
         return list_
@@ -222,11 +220,11 @@ class Parser:
         pairs: Dict[Type[ast.Expression], Type[ast.Expression]] = {}
         while not self._peek_token_is(TokenType.RBRACE):
             self._next_token()
-            key = self._parse_expression(Precedence_level.LOWEST)
+            key = self._parse_expression(PrecedenceLevel.LOWEST)
             if not self._expect_peek(TokenType.COLON):
                 return None
             self._next_token()
-            value = self._parse_expression(Precedence_level.LOWEST)
+            value = self._parse_expression(PrecedenceLevel.LOWEST)
             pairs[key] = value
             if not self._peek_token_is(TokenType.RBRACE) and not self._expect_peek(TokenType.COMMA):
                 return None
@@ -236,7 +234,7 @@ class Parser:
 
     def _parse_group_expression(self) -> Optional[ast.Expression]:
         self._next_token()
-        expr = self._parse_expression(Precedence_level.LOWEST)
+        expr = self._parse_expression(PrecedenceLevel.LOWEST)
         if not self._expect_peek(TokenType.RPAREN):
             return None
         return expr
@@ -247,7 +245,7 @@ class Parser:
         if not self._expect_peek(TokenType.LPAREN):
             return None
         self._next_token()
-        condition = self._parse_expression(Precedence_level.LOWEST)
+        condition = self._parse_expression(PrecedenceLevel.LOWEST)
         if not self._expect_peek(TokenType.RPAREN):
             return None
         if not self._expect_peek(TokenType.LBRACE):
@@ -268,7 +266,7 @@ class Parser:
         self._next_token()
         while not self._current_token_is(TokenType.RBRACE):
             stmt = self._parse_statement()
-            if stmt != None:
+            if stmt is not None:
                 statements.append(stmt)
             self._next_token()
         return ast.BlockStatement(token, statements)
@@ -292,7 +290,7 @@ class Parser:
     def _parse_index_expression(self, left: ast.Expression) -> ast.Expression:
         token = self._current_token
         self._next_token()
-        index = self._parse_expression(Precedence_level.LOWEST)
+        index = self._parse_expression(PrecedenceLevel.LOWEST)
         if not self._expect_peek(TokenType.RBRACKET):
             return None
         return ast.IndexExpression(token, left, index)
@@ -303,11 +301,11 @@ class Parser:
             self._next_token()
             return args
         self._next_token()
-        args.append(self._parse_expression(Precedence_level.LOWEST))
+        args.append(self._parse_expression(PrecedenceLevel.LOWEST))
         while self._peek_token_is(TokenType.COMMA):
             self._next_token()
             self._next_token()
-            args.append(self._parse_expression(Precedence_level.LOWEST))
+            args.append(self._parse_expression(PrecedenceLevel.LOWEST))
         if not self._expect_peek(TokenType.RPAREN):
             return None
         return args
@@ -315,7 +313,7 @@ class Parser:
     def _parse_prefix_expression(self) -> ast.Expression:
         token = self._current_token
         self._next_token()
-        right = self._parse_expression(Precedence_level.PREFIX)
+        right = self._parse_expression(PrecedenceLevel.PREFIX)
         return ast.PrefixExpression(token, token.literal, right)
 
     def _parse_infix_expression(self, left: ast.Expression) -> ast.Expression:
@@ -333,7 +331,7 @@ class Parser:
         if not self._expect_peek(TokenType.ASSIGN):
             return None
         self._next_token()
-        value = self._parse_expression(Precedence_level.LOWEST)
+        value = self._parse_expression(PrecedenceLevel.LOWEST)
         if self._peek_token_is(TokenType.SEMICOLON):
             self._next_token()
         return ast.LetStatement(token, name, value)
@@ -344,46 +342,45 @@ class Parser:
     def _parse_return_statement(self) -> ast.ReturnStatement:
         token = self._current_token
         self._next_token()
-        return_value = self._parse_expression(Precedence_level.LOWEST)
+        return_value = self._parse_expression(PrecedenceLevel.LOWEST)
         if self._peek_token_is(TokenType.SEMICOLON):
             self._next_token()
         return ast.ReturnStatement(token, return_value)
 
-    def _current_token_is(self, t: TokenType) -> bool:
-        return self._current_token.type_ == t
+    def _current_token_is(self, type_: TokenType) -> bool:
+        return self._current_token.type_ == type_
 
-    def _peek_token_is(self, t: TokenType) -> bool:
-        return self._peek_token.type_ == t
+    def _peek_token_is(self, type_: TokenType) -> bool:
+        return self._peek_token.type_ == type_
 
-    def _expect_peek(self, t: TokenType) -> bool:
-        if self._peek_token_is(t):
+    def _expect_peek(self, type_: TokenType) -> bool:
+        if self._peek_token_is(type_):
             self._next_token()
             return True
-        else:
-            self._peek_error(t)
-            return False
+        self._peek_error(type_)
+        return False
 
-    def _peek_error(self, t: TokenType) -> None:
-        message = f"expected next token to be {t.value}. Got {self._peek_token.type_.value} instead"
+    def _peek_error(self, type_: TokenType) -> None:
+        message = f"expected next token to be {type_.value}. Got {self._peek_token.type_.value} instead"
         self.errors.append(message)
 
-    def _no_prefix_parse_fn_error(self, t: TokenType) -> None:
-        message = f"no prefix parse function for {t.value} found"
+    def _no_prefix_parse_fn_error(self, type_: TokenType) -> None:
+        message = f"no prefix parse function for {type_.value} found"
         self.errors.append(message)
 
-    def _peek_precedence(self) -> Precedence_level:
-        t = self._peek_token.type_
+    def _peek_precedence(self) -> PrecedenceLevel:
+        type_ = self._peek_token.type_
 
         # Returning LOWEST when precedence level could not be determined enables
         # us to parse grouped expression. The RParen token doesn't have an
         # associated precedence, and returning LOWEST is what causes the parser
         # to finish evaluating a subexpression as a whole.
-        if t in Precedence:
-            return Precedence[t]
-        return Precedence_level.LOWEST
+        if type_ in Precedence:
+            return Precedence[type_]
+        return PrecedenceLevel.LOWEST
 
-    def _current_precedence(self) -> Precedence_level:
-        t = self._current_token.type_
-        if t in Precedence:
-            return Precedence[t]
-        return Precedence_level.LOWEST
+    def _current_precedence(self) -> PrecedenceLevel:
+        type_ = self._current_token.type_
+        if type_ in Precedence:
+            return Precedence[type_]
+        return PrecedenceLevel.LOWEST

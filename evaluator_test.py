@@ -1,11 +1,11 @@
 import unittest
 from collections import namedtuple
+from typing import Dict
 from parser import Parser
 from lexer import Lexer
-import object
+import monkey_object
 import environment
 from evaluator import Evaluator
-from typing import Type, Dict
 
 Case = namedtuple("Case", ["input", "expected"])
 
@@ -28,20 +28,20 @@ class LexerTest(unittest.TestCase):
             Case("3 * 3 * 3 + 10", 37),
             Case("3 * (3 * 3) + 10", 37),
             Case("(5 + 10 * 2 + 15 / 3) * 2 + -10", 50)]
-        for t in tests:
-            evaluated = self._test_eval(t.input)
-            self._test_integer_object(evaluated, t.expected)
+        for test in tests:
+            evaluated = self._test_eval(test.input)
+            self._test_integer_object(evaluated, test.expected)
 
-    def _test_eval(self, input: str) -> object.Object:
-        l = Lexer(input)
-        p = Parser(l)
-        e = Evaluator()
-        program = p.parse_program()
+    def _test_eval(self, source: str) -> monkey_object.MonkeyObject:
+        lexer = Lexer(source)
+        parser = Parser(lexer)
+        evaluator = Evaluator()
+        program = parser.parse_program()
         env = environment.Environment()
-        return e.eval(program, env)
+        return evaluator.eval(program, env)
 
-    def _test_integer_object(self, obj: object.Object, expected: int) -> None:
-        self.assertIsInstance(obj, object.Integer)
+    def _test_integer_object(self, obj: monkey_object.MonkeyObject, expected: int) -> None:
+        self.assertIsInstance(obj, monkey_object.Integer)
         self.assertEqual(obj.value, expected)
 
     def test_eval_boolean_expression(self):
@@ -65,12 +65,12 @@ class LexerTest(unittest.TestCase):
             Case("(1 < 2) == false", False),
             Case("(1 > 2) == true", False),
             Case("(1 > 2) == false", True)]
-        for t in tests:
-            evaluated = self._test_eval(t.input)
-            self._test_boolean_object(evaluated, t.expected)
+        for test in tests:
+            evaluated = self._test_eval(test.input)
+            self._test_boolean_object(evaluated, test.expected)
 
-    def _test_boolean_object(self, obj: object.Boolean, expected: bool) -> None:
-        self.assertIsInstance(obj, object.Boolean)
+    def _test_boolean_object(self, obj: monkey_object.Boolean, expected: bool) -> None:
+        self.assertIsInstance(obj, monkey_object.Boolean)
         self.assertEqual(obj.value, expected)
 
     def test_bang_operator(self):
@@ -81,9 +81,9 @@ class LexerTest(unittest.TestCase):
             Case("!!true", True),
             Case("!!false", False),
             Case("!!5", True)]
-        for t in tests:
-            evaluated = self._test_eval(t.input)
-            self._test_boolean_object(evaluated, t.expected)
+        for test in tests:
+            evaluated = self._test_eval(test.input)
+            self._test_boolean_object(evaluated, test.expected)
 
     def test_if_else_expression(self) -> None:
         tests = [
@@ -92,14 +92,14 @@ class LexerTest(unittest.TestCase):
             Case("if (1) { 10 }", 10),
             Case("if (1 < 2) { 10 }", 10),
             Case("if (1 > 2) { 10 }", None)]
-        for t in tests:
-            evaluated = self._test_eval(t.input)
-            if type(evaluated) == object.Integer:
-                self._test_integer_object(evaluated, t.expected)
+        for test in tests:
+            evaluated = self._test_eval(test.input)
+            if isinstance(evaluated, monkey_object.Integer):
+                self._test_integer_object(evaluated, test.expected)
             else:
                 self._test_null_object(evaluated)
 
-    def _test_null_object(self, obj: object.Object) -> None:
+    def _test_null_object(self, obj: monkey_object.MonkeyObject) -> None:
         self.assertEqual(obj, Evaluator.null)
 
     def test_return_statement(self) -> None:
@@ -131,9 +131,9 @@ class LexerTest(unittest.TestCase):
                      return 10;
                    };
                    f(10);""", 20)]
-        for t in tests:
-            evaluated = self._test_eval(t.input)
-            self._test_integer_object(evaluated, t.expected)
+        for test in tests:
+            evaluated = self._test_eval(test.input)
+            self._test_integer_object(evaluated, test.expected)
 
     def test_error_handling(self) -> None:
         tests = [
@@ -153,10 +153,10 @@ class LexerTest(unittest.TestCase):
             Case("foobar", "identifier not found: foobar"),
             Case('"Hello" - "World"', "unknown operator: STRING - STRING"),
             Case('{"name": "Monkey"}[fn(x) { x }];', "unusable as hash key: FUNCTION")]
-        for t in tests:
-            evaluated = self._test_eval(t.input)
-            self.assertIsInstance(evaluated, object.Error)
-            self.assertEqual(evaluated.message, t.expected)
+        for test in tests:
+            evaluated = self._test_eval(test.input)
+            self.assertIsInstance(evaluated, monkey_object.Error)
+            self.assertEqual(evaluated.message, test.expected)
 
     def test_let_statements(self) -> None:
         tests = [
@@ -164,13 +164,14 @@ class LexerTest(unittest.TestCase):
             Case("let a = 5 * 5; a;", 25),
             Case("let a = 5; let b = a; b;", 5),
             Case("let a = 5; let b = a; let c = a + b + 5; c;", 15)]
-        for t in tests:
-            self._test_integer_object(self._test_eval(t.input), t.expected)
+        for test in tests:
+            self._test_integer_object(
+                self._test_eval(test.input), test.expected)
 
     def test_function_object(self) -> None:
-        input = "fn(x) { x + 2; };"
-        evaluated = self._test_eval(input)
-        self.assertIsInstance(evaluated, object.Function)
+        source = "fn(x) { x + 2; };"
+        evaluated = self._test_eval(source)
+        self.assertIsInstance(evaluated, monkey_object.Function)
         self.assertEqual(len(evaluated.parameters), 1)
         self.assertEqual(evaluated.parameters[0].string(), "x")
         expected_body = "(x + 2)"
@@ -184,27 +185,28 @@ class LexerTest(unittest.TestCase):
             Case("let add = fn(x, y) { x + y; }; add(5, 5);", 10),
             Case("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20),
             Case("fn(x) { x; }(5)", 5)]
-        for t in tests:
-            self._test_integer_object(self._test_eval(t.input), t.expected)
+        for test in tests:
+            self._test_integer_object(
+                self._test_eval(test.input), test.expected)
 
     def test_closures(self):
-        input = """let newAdder = fn(x) {
+        source = """let newAdder = fn(x) {
                      fn(y) { x + y };
                     };
                     let addTwo = newAdder(2);
                     addTwo(2);"""
-        self._test_integer_object(self._test_eval(input), 4)
+        self._test_integer_object(self._test_eval(source), 4)
 
     def test_string_literal(self):
-        input = '"Hello world"'
-        evaluated = self._test_eval(input)
-        self.assertIsInstance(evaluated, object.String)
+        source = '"Hello world"'
+        evaluated = self._test_eval(source)
+        self.assertIsInstance(evaluated, monkey_object.String)
         self.assertEqual(evaluated.value, "Hello world")
 
     def test_string_concatenation(self):
-        input = '"Hello" + " " + "World!"'
-        evaluated = self._test_eval(input)
-        self.assertIsInstance(evaluated, object.String)
+        source = '"Hello" + " " + "World!"'
+        evaluated = self._test_eval(source)
+        self.assertIsInstance(evaluated, monkey_object.String)
         self.assertEqual(evaluated.value, "Hello World!")
 
     def test_builtin_functions(self):
@@ -228,28 +230,28 @@ class LexerTest(unittest.TestCase):
             Case('rest([])', None),
             Case('push([], 1)', [1]),
             Case('push(1, 1)', "argument to 'push' must be ARRAY. Got INTEGER")]
-        for t in tests:
-            evaluated = self._test_eval(t.input)
-            if type(t.expected) == int:
-                self._test_integer_object(evaluated, t.expected)
-            elif type(t.expected) == str:
-                self.assertIsInstance(evaluated, object.Error)
-                self.assertEqual(evaluated.message, t.expected)
-            elif type(t.expected) == list:
-                self.assertIsInstance(evaluated, object.Array)
-                self.assertEqual(len(evaluated.elements), len(t.expected))
-                for i, expected_element in enumerate(t.expected):
+        for test in tests:
+            evaluated = self._test_eval(test.input)
+            if isinstance(test.expected, int):
+                self._test_integer_object(evaluated, test.expected)
+            elif isinstance(test.expected, str):
+                self.assertIsInstance(evaluated, monkey_object.Error)
+                self.assertEqual(evaluated.message, test.expected)
+            elif isinstance(test.expected, list):
+                self.assertIsInstance(evaluated, monkey_object.Array)
+                self.assertEqual(len(evaluated.elements), len(test.expected))
+                for i, expected_element in enumerate(test.expected):
                     self._test_integer_object(
                         evaluated.elements[i], expected_element)
-            elif t.expected == None:
+            elif test.expected is None:
                 self._test_null_object(evaluated)
             else:
                 raise NotImplementedError
 
     def test_array_literals(self):
-        input = "[1, 2 * 2, 3 + 3]"
-        evaluated = self._test_eval(input)
-        self.assertIsInstance(evaluated, object.Array)
+        source = "[1, 2 * 2, 3 + 3]"
+        evaluated = self._test_eval(source)
+        self.assertIsInstance(evaluated, monkey_object.Array)
         self.assertEqual(len(evaluated.elements), 3)
         self._test_integer_object(evaluated.elements[0], 1)
         self._test_integer_object(evaluated.elements[1], 4)
@@ -263,42 +265,42 @@ class LexerTest(unittest.TestCase):
             Case("let i = 0; [1][i];", 1),
             Case("[1, 2, 3][1 + 1];", 3),
             Case("let myArray = [1, 2, 3]; myArray[2];", 3),
-            Case("let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 
+            Case("let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
                  6),
             Case("let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2),
             Case("[1, 2, 3][3]", None),
             Case("[1, 2, 3][-1]", None)]
-        for t in tests:
-            evaluated = self._test_eval(t.input)
-            if type(t.expected) == int:
-                self._test_integer_object(evaluated, t.expected)
+        for test in tests:
+            evaluated = self._test_eval(test.input)
+            if isinstance(test.expected, int):
+                self._test_integer_object(evaluated, test.expected)
             else:
                 self._test_null_object(evaluated)
 
     def test_hash_literals(self):
-        input = """let two = "two";
-                   {
-                     "one": 10 - 9,
-                     two: 1 + 1,
-                     "thr" + "ee": 6 / 2,
-                     4: 4,
-                     true: 5,
-                     false: 6
-                   }"""
-        evaluated = self._test_eval(input)
-        self.assertIsInstance(evaluated, object.Hash)
-        expected: Dict[object.HashKey, int] = {
-            object.String("one").hash_key(): 1,
-            object.String("two").hash_key(): 2,
-            object.String("three").hash_key(): 3,
-            object.Integer(4).hash_key(): 4,
+        source = """let two = "two";
+                    {
+                      "one": 10 - 9,
+                      two: 1 + 1,
+                      "thr" + "ee": 6 / 2,
+                      4: 4,
+                      true: 5,
+                      false: 6
+                    }"""
+        evaluated = self._test_eval(source)
+        self.assertIsInstance(evaluated, monkey_object.Hash)
+        expected: Dict[monkey_object.HashKey, int] = {
+            monkey_object.String("one").hash_key(): 1,
+            monkey_object.String("two").hash_key(): 2,
+            monkey_object.String("three").hash_key(): 3,
+            monkey_object.Integer(4).hash_key(): 4,
             Evaluator.true.hash_key(): 5,
             Evaluator.false.hash_key(): 6
         }
         self.assertEqual(len(evaluated.pairs), len(expected))
-        for k, v in expected.items():
-            pair = evaluated.pairs[k]
-            self._test_integer_object(pair.value, v)
+        for key, value in expected.items():
+            pair = evaluated.pairs[key]
+            self._test_integer_object(pair.value, value)
 
     def test_hash_index_expressions(self):
         tests = [
@@ -309,9 +311,9 @@ class LexerTest(unittest.TestCase):
             Case('{5: 5}[5]', 5),
             Case('{true: 5}[true]', 5),
             Case('{false: 5}[false]', 5)]
-        for t in tests:
-            evaluated = self._test_eval(t.input)
-            if type(t.expected) == int:
-                self._test_integer_object(evaluated, t.expected)
+        for test in tests:
+            evaluated = self._test_eval(test.input)
+            if isinstance(test.expected, int):
+                self._test_integer_object(evaluated, test.expected)
             else:
                 self._test_null_object(evaluated)
