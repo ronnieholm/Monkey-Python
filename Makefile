@@ -7,7 +7,9 @@ test:
 	python3 -m unittest *_test.py
 
 mypy:
-	mypy *.py
+	# Or use --strict, a superset of --disallow-untyped-defs
+	# Use tools such as MonkeyType or pyannotate to generate initial hints
+	mypy --disallow-untyped-defs *.py
 
 lint:
 	pylint *.py
