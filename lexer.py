@@ -161,10 +161,10 @@ class Lexer:
         return self._source[position:self._position]
 
     def _is_letter(self, char: str) -> bool:
-        return "a" <= char and char <= "z" or "A" <= char and char <= "Z" or char == "_"
+        return "a" <= char <= "z" or "A" <= char <= "Z" or char == "_"
 
     def _is_digit(self, char: str) -> bool:
-        return "0" <= char and char <= "9"
+        return "0" <= char <= "9"
 
     def _peek_char(self) -> Optional[str]:
         if self._read_position >= len(self._source):

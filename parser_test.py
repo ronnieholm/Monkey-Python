@@ -90,11 +90,10 @@ class ParserTests(unittest.TestCase):
 
     def test_parsing_prefix_expressions(self) -> None:
         Case = namedtuple("Case", ["source", "operator", "value"])
-        tests = [
-            Case("!5;", "!", 5),
-            Case("-15;", "-", 15),
-            Case("!true", "!", True),
-            Case("!false;", "!", False)]
+        tests = [Case("!5;", "!", 5),
+                 Case("-15;", "-", 15),
+                 Case("!true", "!", True),
+                 Case("!false;", "!", False)]
 
         for test in tests:
             program = self._setup_program(test.source)
@@ -130,22 +129,26 @@ class ParserTests(unittest.TestCase):
         else:
             self.assertEqual(expr.token_literal(), "false")
 
-    def _test_literal_expression(self, expr: ast.Expression, expected: Union[int, str, bool]) -> None:
-        # TODO: Why does converting to isinstance fail comparisons?
-        if type(expected) == int:
-            self._test_integer_literal(expr, cast(int, expected))
-        elif type(expected) == str:
-            self._test_identifier(expr, cast(str, expected))
-        elif type(expected) == bool:
+    def _test_literal_expression(self, expr: ast.Expression,
+                                 expected: Union[int, str, bool]) -> None:
+        # bool check must preceed int check or bool is matched as int.
+        if isinstance(expected, bool):
             self._test_boolean_literal(expr, cast(bool, expected))
+        elif isinstance(expected, int):
+            self._test_integer_literal(expr, cast(int, expected))
+        elif isinstance(expected, str):
+            self._test_identifier(expr, cast(str, expected))
         else:
             self.fail(f"type of expr not handled. Got {type(expected)}")
 
-    def _test_infix_expression(self, expr: ast.Expression, left: Any, operator: str, right: Any) -> None:
+    def _test_infix_expression(self, expr: ast.Expression, left: Any,
+                               operator: str, right: Any) -> None:
         self.assertIsInstance(expr, ast.InfixExpression)
-        self._test_literal_expression(cast(ast.InfixExpression, expr).left, left)
+        self._test_literal_expression(
+            cast(ast.InfixExpression, expr).left, left)
         self.assertEqual(cast(ast.InfixExpression, expr).operator, operator)
-        self._test_literal_expression(cast(ast.InfixExpression, expr).right, right)
+        self._test_literal_expression(
+            cast(ast.InfixExpression, expr).right, right)
 
     def test_parsing_infix_expressions(self) -> None:
         Case = namedtuple(
@@ -205,7 +208,8 @@ class ParserTests(unittest.TestCase):
                  "add((((a + b) + ((c * d) / f)) + g))"),
             Case("a * [1, 2, 3, 4][b * c] * d",
                  "((a * ([1, 2, 3, 4][(b * c)])) * d)"),
-            Case("add(a * b[2], b[1], 2 * [1, 2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))")]
+            Case("add(a * b[2], b[1], 2 * [1, 2][1])",
+                 "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))")]
 
         for test in tests:
             program = self._setup_program(test.source)
@@ -214,7 +218,7 @@ class ParserTests(unittest.TestCase):
             actual = program.string()
             self.assertEqual(actual, test.expected)
 
-    def test_bool_expressions(self) -> None:
+    def test_boolean_expressions(self) -> None:
         Case = namedtuple("Case", ["source", "expected"])
         tests = [Case("true", "true"),
                  Case("false", "false")]
@@ -233,7 +237,8 @@ class ParserTests(unittest.TestCase):
         expr = cast(ast.IfExpression, stmt.expression)
         self._test_infix_expression(expr.condition, "x", "<", "y")
         self.assertEqual(len(expr.consequence.statements), 1)
-        consequence = cast(ast.ExpressionStatement, expr.consequence.statements[0])
+        consequence = cast(ast.ExpressionStatement,
+                           expr.consequence.statements[0])
         self.assertIsInstance(consequence, ast.ExpressionStatement)
         self._test_identifier(consequence.expression, "x")
         self.assertEqual(expr.alternative, None)
@@ -247,12 +252,14 @@ class ParserTests(unittest.TestCase):
         expr = cast(ast.IfExpression, stmt.expression)
         self._test_infix_expression(expr.condition, "x", "<", "y")
         self.assertEqual(len(expr.consequence.statements), 1)
-        consequence = cast(ast.ExpressionStatement, expr.consequence.statements[0])
+        consequence = cast(ast.ExpressionStatement,
+                           expr.consequence.statements[0])
         self.assertIsInstance(consequence, ast.ExpressionStatement)
         self._test_identifier(consequence.expression, "x")
         assert expr.alternative is not None
         self.assertEqual(len(expr.alternative.statements), 1)
-        alternative = cast(ast.ExpressionStatement, expr.alternative.statements[0])
+        alternative = cast(ast.ExpressionStatement,
+                           expr.alternative.statements[0])
         self.assertIsInstance(alternative, ast.ExpressionStatement)
         self._test_identifier(alternative.expression, "y")
 
@@ -270,7 +277,7 @@ class ParserTests(unittest.TestCase):
         self._test_literal_expression(literal.parameters[1], "y")
         self.assertEqual(len(literal.body.statements), 1)
         body_stmt = cast(ast.ExpressionStatement, literal.body.statements[0])
-        self.assertIsInstance(body_stmt, ast.ExpressionStatement)        
+        self.assertIsInstance(body_stmt, ast.ExpressionStatement)
         self._test_infix_expression(body_stmt.expression, "x", "+", "y")
 
     def test_function_parameter_parsing(self) -> None:
@@ -381,8 +388,6 @@ class ParserTests(unittest.TestCase):
         hash_literal = cast(ast.HashLiteral, stmt.expression)
         self.assertIsInstance(hash_literal, ast.HashLiteral)
         self.assertEqual(len(hash_literal.pairs), 0)
-
-    # TODO: verify with parser_test.go that we include all TestParserHash tests
 
     def test_parsing_hash_literals_with_expressions(self) -> None:
         source = '{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}'

@@ -1,8 +1,8 @@
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
 
 class Environment:
-    def __init__(self) -> None:        
+    def __init__(self) -> None:
         self._store: Dict[str, "monkey_object.MonkeyObject"] = {}
         self.outer: Optional[Environment] = None
 
@@ -29,4 +29,5 @@ class Environment:
         self._store[name] = value
         return value
 
+# pylint: disable=unused-import, wrong-import-position
 import monkey_object

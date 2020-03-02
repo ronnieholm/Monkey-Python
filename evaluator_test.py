@@ -68,7 +68,8 @@ class EvaluatorTest(unittest.TestCase):
             Case("(1 > 2) == true", False),
             Case("(1 > 2) == false", True)]
         for test in tests:
-            evaluated = cast(monkey_object.Boolean, self._test_eval(test.source))
+            evaluated = cast(monkey_object.Boolean,
+                             self._test_eval(test.source))
             self._test_boolean_object(evaluated, test.expected)
 
     def _test_boolean_object(self, obj: monkey_object.Boolean, expected: bool) -> None:
@@ -84,7 +85,8 @@ class EvaluatorTest(unittest.TestCase):
             Case("!!false", False),
             Case("!!5", True)]
         for test in tests:
-            evaluated = cast(monkey_object.Boolean, self._test_eval(test.source))
+            evaluated = cast(monkey_object.Boolean,
+                             self._test_eval(test.source))
             self._test_boolean_object(evaluated, test.expected)
 
     def test_if_else_expression(self) -> None:
@@ -238,10 +240,12 @@ class EvaluatorTest(unittest.TestCase):
                 self._test_integer_object(evaluated, test.expected)
             elif isinstance(test.expected, str):
                 self.assertIsInstance(evaluated, monkey_object.Error)
-                self.assertEqual(cast(monkey_object.Error, evaluated).message, test.expected)
+                self.assertEqual(
+                    cast(monkey_object.Error, evaluated).message, test.expected)
             elif isinstance(test.expected, list):
                 self.assertIsInstance(evaluated, monkey_object.Array)
-                self.assertEqual(len(cast(monkey_object.Array, evaluated).elements), len(test.expected))
+                self.assertEqual(
+                    len(cast(monkey_object.Array, evaluated).elements), len(test.expected))
                 for i, expected_element in enumerate(test.expected):
                     self._test_integer_object(
                         cast(monkey_object.Array, evaluated).elements[i], expected_element)

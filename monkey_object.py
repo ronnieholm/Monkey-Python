@@ -1,6 +1,6 @@
 from enum import Enum, unique
-from abc import ABC, abstractclassmethod
-from typing import List, Dict, NewType, Callable
+from abc import abstractclassmethod
+from typing import List, Dict, Callable
 import hashlib
 from collections import namedtuple
 import ast
@@ -32,8 +32,6 @@ class ObjectType(Enum):
 # different. namedtyple on the other hand has value sematics.
 # // TODO: type: ObjectType, value: int
 HashKey = namedtuple("HashKey", ["type", "value"])
-
-# TODO: How to force runtime error if method is not implemented? It's currently ignored
 
 
 class Hashable:
@@ -140,7 +138,8 @@ class Error(MonkeyObject):
 
 
 class Function(MonkeyObject):
-    def __init__(self, parameters: List[ast.Identifier], body: ast.BlockStatement, env: Environment) -> None:
+    def __init__(self, parameters: List[ast.Identifier], body: ast.BlockStatement,
+                 env: Environment) -> None:
         self.parameters = parameters
         self.body = body
 

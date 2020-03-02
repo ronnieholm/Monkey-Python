@@ -1,0 +1,10 @@
+[MASTER]
+disable=missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    no-self-use,
+    too-few-public-methods,
+    too-many-branches,
+    too-many-statements,
+    cyclic-import,
+    too-many-return-statements

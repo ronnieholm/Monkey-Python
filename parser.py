@@ -1,5 +1,5 @@
 from enum import Enum, unique
-from typing import List, Callable, Dict, Optional, Type, Union
+from typing import List, Callable, Dict, Optional, Union
 import ast
 from lexer import Lexer, Token, TokenType
 
@@ -119,7 +119,7 @@ class Parser:
             self._next_token()
         return ast.Program(stmts)
 
-    def _parse_statement(self) -> Optional[Union[ast.Statement, ast.Expression]]:        
+    def _parse_statement(self) -> Optional[Union[ast.Statement, ast.Expression]]:
         if self._current_token.type_ == TokenType.LET:
             return self._parse_let_statement()
         if self._current_token.type_ == TokenType.RETURN:
@@ -155,7 +155,8 @@ class Parser:
         # For as long as left-binding power > right-binding power, add another
         # level to the Abstract Syntax Three, signifying operations which need
         # to be carried out first when the expression is evaluated.
-        while not self._peek_token_is(TokenType.SEMICOLON) and precedence.value < self._peek_precedence().value:
+        while not self._peek_token_is(TokenType.SEMICOLON) \
+              and precedence.value < self._peek_precedence().value:
             peek = self._peek_token.type_
             if not peek in self._infix_parse_fns:
                 return left_expr
@@ -167,7 +168,7 @@ class Parser:
     def _parse_identifier(self) -> Optional[ast.Identifier]:
         return ast.Identifier(self._current_token, self._current_token.literal)
 
-    def _parse_integer_literal(self) -> Optional[ast.Expression]:
+    def _parse_integer_literal(self) -> Optional[ast.IntegerLiteral]:
         token = self._current_token
         try:
             value = int(token.literal)
@@ -177,7 +178,7 @@ class Parser:
             return None
         return ast.IntegerLiteral(token, value)
 
-    def _parse_string_literal(self) -> ast.Expression:
+    def _parse_string_literal(self) -> ast.StringLiteral:
         return ast.StringLiteral(self._current_token, self._current_token.literal)
 
     def _parse_function_parameters(self) -> Optional[List[ast.Identifier]]:
@@ -220,13 +221,13 @@ class Parser:
             return None
         return list_
 
-    def _parse_array_literal(self) -> Optional[ast.Expression]:
+    def _parse_array_literal(self) -> Optional[ast.ArrayLiteral]:
         token = self._current_token
         elements = self._parse_expression_list(TokenType.RBRACKET)
         assert elements is not None
         return ast.ArrayLiteral(token, elements)
 
-    def _parse_hash_literal(self) -> Optional[ast.Expression]:
+    def _parse_hash_literal(self) -> Optional[ast.HashLiteral]:
         token = self._current_token
         pairs: Dict[ast.Expression, ast.Expression] = {}
         while not self._peek_token_is(TokenType.RBRACE):
@@ -252,8 +253,7 @@ class Parser:
             return None
         return expr
 
-    # TODO: why not return If_expression?
-    def _parse_if_expression(self) -> Optional[ast.Expression]:
+    def _parse_if_expression(self) -> Optional[ast.IfExpression]:
         token = self._current_token
         if not self._expect_peek(TokenType.LPAREN):
             return None
@@ -284,8 +284,7 @@ class Parser:
             self._next_token()
         return ast.BlockStatement(token, statements)
 
-    # TODO: Why not Function_literal?
-    def _parse_function_literal(self) -> Optional[ast.Expression]:
+    def _parse_function_literal(self) -> Optional[ast.FunctionLiteral]:
         token = self._current_token
         if not self._expect_peek(TokenType.LPAREN):
             return None
@@ -296,13 +295,13 @@ class Parser:
         body = self._parse_block_statement()
         return ast.FunctionLiteral(token, parameters, body)
 
-    def _parse_call_expression(self, function: ast.Expression) -> Optional[ast.Expression]:
+    def _parse_call_expression(self, function: ast.Expression) -> Optional[ast.CallExpression]:
         token = self._current_token
         arguments = self._parse_expression_list(TokenType.RPAREN)
         assert arguments is not None
         return ast.CallExpression(token, function, arguments)
 
-    def _parse_index_expression(self, left: ast.Expression) -> Optional[ast.Expression]:
+    def _parse_index_expression(self, left: ast.Expression) -> Optional[ast.IndexExpression]:
         token = self._current_token
         self._next_token()
         index = self._parse_expression(PrecedenceLevel.LOWEST)
@@ -330,14 +329,14 @@ class Parser:
             return None
         return args
 
-    def _parse_prefix_expression(self) -> Optional[ast.Expression]:
+    def _parse_prefix_expression(self) -> Optional[ast.PrefixExpression]:
         token = self._current_token
         self._next_token()
         right = self._parse_expression(PrecedenceLevel.PREFIX)
         assert right is not None
         return ast.PrefixExpression(token, token.literal, right)
 
-    def _parse_infix_expression(self, left: ast.Expression) -> Optional[ast.Expression]:
+    def _parse_infix_expression(self, left: ast.Expression) -> Optional[ast.InfixExpression]:
         token = self._current_token
         precedence = self._current_precedence()
         self._next_token()
@@ -392,7 +391,8 @@ class Parser:
 
     def _peek_error(self, type_: TokenType) -> None:
         assert self._peek_token is not None
-        message = f"expected next token to be {type_.value}. Got {self._peek_token.type_.value} instead"
+        message = f"expected next token to be {type_.value}. " + \
+                  f"Got {self._peek_token.type_.value} instead"
         self.errors.append(message)
 
     def _no_prefix_parse_fn_error(self, type_: TokenType) -> None:

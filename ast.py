@@ -145,7 +145,9 @@ class BlockStatement(Statement):
 
 
 class IfExpression(Expression):
-    def __init__(self, token: Token, condition: Expression, consequence: BlockStatement, alternative: Optional[BlockStatement]) -> None:
+    def __init__(self, token: Token, condition: Expression,
+                 consequence: BlockStatement,
+                 alternative: Optional[BlockStatement]) -> None:
         super(IfExpression, self).__init__(token)
         self.condition = condition
         self.consequence = consequence
@@ -207,14 +209,12 @@ class IndexExpression(Expression):
 
 
 class HashLiteral(Expression):
-    from monkey_object import MonkeyObject
-
     def __init__(self, token: Token, pairs: Dict[Expression, Expression]) -> None:
         super(HashLiteral, self).__init__(token)
         self.pairs = pairs
 
     def string(self) -> str:
         pairs = []
-        for k, v in self.pairs.items():
-            pairs.append(f"{k.string()}: {v.string()}")
+        for key, value in self.pairs.items():
+            pairs.append(f"{key.string()}: {value.string()}")
         return f"{{{', '.join(pairs)}}}"

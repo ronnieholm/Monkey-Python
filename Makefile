@@ -1,10 +1,10 @@
-default: test mypy mylint repl
+default: mypy pylint test repl
 
 repl:
 	python3 main.py
 
 test:
-	python3 -m unittest *_test.py
+	python3 -m unittest *test.py
 
 mypy:
 	# Or use --strict, a superset of --disallow-untyped-defs

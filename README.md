@@ -35,7 +35,7 @@ tests and [Examples](Examples) folder in this repository.
     $ cd Monkey-Python
     $ python3 -m venv venv
     $ source venv/bin/activate
-    $ pip3 install -r requirements-dev.txt
+    $ pip3 install -r requirements.txt
     $ mypy *.py
     $ python3 -m unittest *test.py
     $ python3 main.py
