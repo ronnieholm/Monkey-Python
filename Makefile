@@ -11,7 +11,7 @@ mypy:
 	# Use tools such as MonkeyType or pyannotate to generate initial hints
 	mypy --disallow-untyped-defs *.py
 
-lint:
+pylint:
 	pylint *.py
 
 clean:

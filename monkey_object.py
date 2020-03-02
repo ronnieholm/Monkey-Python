@@ -1,5 +1,5 @@
 from enum import Enum, unique
-from abc import abstractclassmethod
+from abc import ABC, abstractclassmethod
 from typing import List, Dict, NewType, Callable
 import hashlib
 from collections import namedtuple
@@ -53,7 +53,7 @@ class MonkeyObject:
 
 
 class Integer(MonkeyObject, Hashable):
-    def __init__(self, value: int):
+    def __init__(self, value: int) -> None:
         self.value = value
 
     def type_(self) -> ObjectType:
@@ -67,7 +67,7 @@ class Integer(MonkeyObject, Hashable):
 
 
 class String(MonkeyObject, Hashable):
-    def __init__(self, value: str):
+    def __init__(self, value: str) -> None:
         self.value = value
 
     def type_(self) -> ObjectType:
@@ -81,7 +81,7 @@ class String(MonkeyObject, Hashable):
 
 
 class Boolean(MonkeyObject, Hashable):
-    def __init__(self, value: bool):
+    def __init__(self, value: bool) -> None:
         self.value = value
 
     def type_(self) -> ObjectType:
@@ -111,7 +111,7 @@ class Null(MonkeyObject):
 class ReturnValue(MonkeyObject):
     # ReturnValue is a wrapper around another Monkey object.
 
-    def __init__(self, value: MonkeyObject):
+    def __init__(self, value: MonkeyObject) -> None:
         self.value = value
 
     def type_(self) -> ObjectType:
@@ -129,7 +129,7 @@ class Error(MonkeyObject):
     # Error wraps a string error message. In a production language, we'd want to
     # attach stack trace and line and column numbers to such error object.
 
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         self.message = message
 
     def type_(self) -> ObjectType:
@@ -140,7 +140,7 @@ class Error(MonkeyObject):
 
 
 class Function(MonkeyObject):
-    def __init__(self, parameters: List[ast.Identifier], body: ast.BlockStatement, env: Environment):
+    def __init__(self, parameters: List[ast.Identifier], body: ast.BlockStatement, env: Environment) -> None:
         self.parameters = parameters
         self.body = body
 
@@ -158,7 +158,7 @@ class Function(MonkeyObject):
 
 
 class Array(MonkeyObject):
-    def __init__(self, elements: List[MonkeyObject]):
+    def __init__(self, elements: List[MonkeyObject]) -> None:
         self.elements = elements
 
     def type_(self) -> ObjectType:
@@ -189,12 +189,8 @@ class Hash(MonkeyObject):
         return f"{{{', '.join(pairs)}}}"
 
 
-BuiltinFunction = NewType(
-    "BuiltinFunction", Callable[[MonkeyObject], MonkeyObject])
-
-
 class Builtin(MonkeyObject):
-    def __init__(self, function: BuiltinFunction):
+    def __init__(self, function: Callable[[List[MonkeyObject]], MonkeyObject]) -> None:
         self.function = function
 
     def type_(self) -> ObjectType:

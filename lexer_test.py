@@ -4,7 +4,7 @@ from lexer import Lexer, TokenType
 
 
 class LexerTest(unittest.TestCase):
-    def test_next_token(self):
+    def test_next_token(self) -> None:
         source = """let five = 5;
                     let ten = 10;
                     

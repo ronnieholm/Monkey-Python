@@ -1,6 +1,7 @@
+from typing import cast, Union, Any
+from collections import namedtuple
 import ast
 import unittest
-from collections import namedtuple
 from parser import Parser
 from lexer import Lexer
 
@@ -13,7 +14,7 @@ class ParserTests(unittest.TestCase):
         self._check_parser_errors(parser)
         return program
 
-    def test_let_statements(self):
+    def test_let_statements(self) -> None:
         Case = namedtuple(
             "Case", ["source", "expected_identifier", "expected_value"])
         tests = [
@@ -24,26 +25,30 @@ class ParserTests(unittest.TestCase):
         for test in tests:
             program = self._setup_program(test.source)
             self.assertEqual(len(program.statements), 1)
-            stmt = program.statements[0]
+            stmt = cast(ast.LetStatement, program.statements[0])
             self._test_let_statement(stmt, test.expected_identifier)
             self.assertIsInstance(stmt, ast.LetStatement)
             value = stmt.value
             self._test_literal_expression(value, test.expected_value)
 
-    def _test_let_statement(self, stmt: ast.Statement, name: str):
+    def _test_let_statement(self, stmt: ast.Statement, name: str) -> None:
         self.assertEqual(stmt.token_literal(), "let")
+        # Downside of type checking being done by a seperate program is that we
+        # must assert the same thing twice: first to satisfy the runtime unit
+        # test and second to satisfy mypy.
         self.assertIsInstance(stmt, ast.LetStatement)
-        self.assertEqual(stmt.name.value, name)
-        self.assertEqual(stmt.name.token_literal(), name)
+        let_stmt = cast(ast.LetStatement, stmt)
+        self.assertEqual(let_stmt.name.value, name)
+        self.assertEqual(let_stmt.name.token_literal(), name)
 
-    def _check_parser_errors(self, parser: Parser):
+    def _check_parser_errors(self, parser: Parser) -> None:
         if len(parser.errors) == 0:
             return
         for message in parser.errors:
             print(message)
         self.fail("See stdout")
 
-    def test_return_statements(self):
+    def test_return_statements(self) -> None:
         Case = namedtuple("Case", ["source", "expected_value"])
         tests = [
             Case("return 5;", 5),
@@ -53,35 +58,37 @@ class ParserTests(unittest.TestCase):
         for test in tests:
             program = self._setup_program(test.source)
             self.assertEqual(len(program.statements), 1)
-            return_stmt = program.statements[0]
+            return_stmt = cast(ast.ReturnStatement, program.statements[0])
             self.assertIsInstance(return_stmt, ast.ReturnStatement)
             self.assertEqual(return_stmt.token_literal(), "return")
             self._test_literal_expression(
                 return_stmt.return_value, test.expected_value)
 
-    def test_identifier_expression(self):
+    def test_identifier_expression(self) -> None:
         source = "foobar"
         program = self._setup_program(source)
         self.assertEqual(len(program.statements), 1)
         stmt = program.statements[0]
         self.assertIsInstance(stmt, ast.ExpressionStatement)
-        self.assertIsInstance(stmt.expression, ast.Identifier)
-        ident = stmt.expression
+        expr_stmt = cast(ast.ExpressionStatement, stmt)
+        self.assertIsInstance(expr_stmt.expression, ast.Identifier)
+        ident = cast(ast.Identifier, expr_stmt.expression)
         self.assertEqual(ident.value, "foobar")
         self.assertEqual(ident.token.literal, "foobar")
 
-    def test_integer_literal_expression(self):
+    def test_integer_literal_expression(self) -> None:
         source = "5"
         program = self._setup_program(source)
         self.assertEqual(len(program.statements), 1)
         stmt = program.statements[0]
         self.assertIsInstance(stmt, ast.ExpressionStatement)
-        self.assertIsInstance(stmt.expression, ast.IntegerLiteral)
-        literal = stmt.expression
+        expr_stmt = cast(ast.ExpressionStatement, stmt)
+        self.assertIsInstance(expr_stmt.expression, ast.IntegerLiteral)
+        literal = cast(ast.IntegerLiteral, expr_stmt.expression)
         self.assertEqual(literal.value, 5)
         self.assertEqual(literal.token.literal, "5")
 
-    def test_parsing_prefix_expressions(self):
+    def test_parsing_prefix_expressions(self) -> None:
         Case = namedtuple("Case", ["source", "operator", "value"])
         tests = [
             Case("!5;", "!", 5),
@@ -94,26 +101,28 @@ class ParserTests(unittest.TestCase):
             self.assertEqual(len(program.statements), 1)
             stmt = program.statements[0]
             self.assertIsInstance(stmt, ast.ExpressionStatement)
-            self.assertIsInstance(stmt.expression, ast.PrefixExpression)
-            expr = stmt.expression
+            expr_stmt = cast(ast.ExpressionStatement, stmt)
+            self.assertIsInstance(expr_stmt.expression, ast.PrefixExpression)
+            expr = cast(ast.PrefixExpression, expr_stmt.expression)
             self.assertEqual(expr.operator, test.operator)
-            if not self._test_integer_literal(expr.right, test.value):
-                return
+            self._test_literal_expression(expr.right, test.value)
 
     def _test_integer_literal(self, expr: ast.Expression, value: int) -> None:
         self.assertIsInstance(expr, ast.IntegerLiteral)
-        integer = expr
+        integer = cast(ast.IntegerLiteral, expr)
         self.assertEqual(integer.value, value)
         self.assertEqual(integer.token.literal, str(value))
 
     def _test_identifier(self, expr: ast.Expression, value: str) -> None:
         self.assertIsInstance(expr, ast.Identifier)
-        self.assertEqual(expr.value, value)
-        self.assertEqual(expr.token.literal, value)
+        identifier = cast(ast.Identifier, expr)
+        self.assertEqual(identifier.value, value)
+        self.assertEqual(identifier.token.literal, value)
 
-    def _test_boolean_literal(self, expr: ast.Expression, value: str) -> None:
+    def _test_boolean_literal(self, expr: ast.Expression, value: bool) -> None:
         self.assertIsInstance(expr, ast.Boolean)
-        self.assertEqual(expr.value, value)
+        boolean = cast(ast.Boolean, expr)
+        self.assertEqual(boolean.value, value)
 
         # Monkey and Python boolean literals differ
         if value:
@@ -121,24 +130,24 @@ class ParserTests(unittest.TestCase):
         else:
             self.assertEqual(expr.token_literal(), "false")
 
-    def _test_literal_expression(self, expr: ast.Expression, expected: any) -> None:
+    def _test_literal_expression(self, expr: ast.Expression, expected: Union[int, str, bool]) -> None:
         # TODO: Why does converting to isinstance fail comparisons?
         if type(expected) == int:
-            self._test_integer_literal(expr, expected)
+            self._test_integer_literal(expr, cast(int, expected))
         elif type(expected) == str:
-            self._test_identifier(expr, expected)
+            self._test_identifier(expr, cast(str, expected))
         elif type(expected) == bool:
-            self._test_boolean_literal(expr, expected)
+            self._test_boolean_literal(expr, cast(bool, expected))
         else:
             self.fail(f"type of expr not handled. Got {type(expected)}")
 
-    def _test_infix_expression(self, expr: ast.Expression, left: any, operator: str, right: any) -> None:
+    def _test_infix_expression(self, expr: ast.Expression, left: Any, operator: str, right: Any) -> None:
         self.assertIsInstance(expr, ast.InfixExpression)
-        self._test_literal_expression(expr.left, left)
-        self.assertEqual(expr.operator, operator)
-        self._test_literal_expression(expr.right, right)
+        self._test_literal_expression(cast(ast.InfixExpression, expr).left, left)
+        self.assertEqual(cast(ast.InfixExpression, expr).operator, operator)
+        self._test_literal_expression(cast(ast.InfixExpression, expr).right, right)
 
-    def test_parsing_infix_expressions(self):
+    def test_parsing_infix_expressions(self) -> None:
         Case = namedtuple(
             "Case", ["source", "left_value", "operator", "right_value"])
         tests = [
@@ -157,11 +166,12 @@ class ParserTests(unittest.TestCase):
         for test in tests:
             program = self._setup_program(test.source)
             self.assertEqual(len(program.statements), 1)
-            stmt = program.statements[0].expression
+            expr_stmt = cast(ast.ExpressionStatement, program.statements[0])
+            expr = expr_stmt.expression
             self._test_infix_expression(
-                stmt, test.left_value, test.operator, test.right_value)
+                expr, test.left_value, test.operator, test.right_value)
 
-    def test_operator_precedence_parsing(self):
+    def test_operator_precedence_parsing(self) -> None:
         Case = namedtuple("Case", ["source", "expected"])
         tests = [
             Case("-a * b", "((-a) * b)"),
@@ -204,151 +214,153 @@ class ParserTests(unittest.TestCase):
             actual = program.string()
             self.assertEqual(actual, test.expected)
 
-    def test_bool_expressions(self):
+    def test_bool_expressions(self) -> None:
         Case = namedtuple("Case", ["source", "expected"])
-        tests = [
-            Case("true", "true"),
-            Case("false", "false")]
+        tests = [Case("true", "true"),
+                 Case("false", "false")]
 
         for test in tests:
             program = self._setup_program(test.source)
             actual = program.string()
             self.assertEqual(actual, test.expected)
 
-    def test_if_expression(self):
+    def test_if_expression(self) -> None:
         source = "if (x < y) { x }"
         program = self._setup_program(source)
         self.assertEqual(len(program.statements), 1)
-        expr = program.statements[0].expression
-        self.assertIsInstance(expr, ast.IfExpression)
+        stmt = cast(ast.ExpressionStatement, program.statements[0])
+        self.assertIsInstance(stmt.expression, ast.IfExpression)
+        expr = cast(ast.IfExpression, stmt.expression)
         self._test_infix_expression(expr.condition, "x", "<", "y")
         self.assertEqual(len(expr.consequence.statements), 1)
-        consequence = expr.consequence.statements[0]
+        consequence = cast(ast.ExpressionStatement, expr.consequence.statements[0])
         self.assertIsInstance(consequence, ast.ExpressionStatement)
         self._test_identifier(consequence.expression, "x")
         self.assertEqual(expr.alternative, None)
 
-    def test_if_else_expression(self):
+    def test_if_else_expression(self) -> None:
         source = "if (x < y) { x } else { y }"
         program = self._setup_program(source)
         self.assertEqual(len(program.statements), 1)
-        expr = program.statements[0].expression
-        self.assertIsInstance(expr, ast.IfExpression)
+        stmt = cast(ast.ExpressionStatement, program.statements[0])
+        self.assertIsInstance(stmt.expression, ast.IfExpression)
+        expr = cast(ast.IfExpression, stmt.expression)
         self._test_infix_expression(expr.condition, "x", "<", "y")
         self.assertEqual(len(expr.consequence.statements), 1)
-        consequence = expr.consequence.statements[0]
+        consequence = cast(ast.ExpressionStatement, expr.consequence.statements[0])
         self.assertIsInstance(consequence, ast.ExpressionStatement)
         self._test_identifier(consequence.expression, "x")
+        assert expr.alternative is not None
         self.assertEqual(len(expr.alternative.statements), 1)
-        alternative = expr.alternative.statements[0]
+        alternative = cast(ast.ExpressionStatement, expr.alternative.statements[0])
         self.assertIsInstance(alternative, ast.ExpressionStatement)
         self._test_identifier(alternative.expression, "y")
 
-    def test_function_literal_parsing(self):
+    def test_function_literal_parsing(self) -> None:
         source = "fn(x, y) { x + y; }"
         program = self._setup_program(source)
         self.assertEqual(len(program.statements), 1)
-        stmt = program.statements[0]
+        stmt = cast(ast.ExpressionStatement, program.statements[0])
         self.assertIsInstance(stmt, ast.ExpressionStatement)
         function = stmt.expression
         self.assertIsInstance(function, ast.FunctionLiteral)
-        self.assertEqual(len(function.parameters), 2)
-        self._test_literal_expression(function.parameters[0], "x")
-        self._test_literal_expression(function.parameters[1], "y")
-        self.assertEqual(len(function.body.statements), 1)
-        body_stmt = function.body.statements[0]
-        self.assertIsInstance(body_stmt, ast.ExpressionStatement)
+        literal = cast(ast.FunctionLiteral, function)
+        self.assertEqual(len(literal.parameters), 2)
+        self._test_literal_expression(literal.parameters[0], "x")
+        self._test_literal_expression(literal.parameters[1], "y")
+        self.assertEqual(len(literal.body.statements), 1)
+        body_stmt = cast(ast.ExpressionStatement, literal.body.statements[0])
+        self.assertIsInstance(body_stmt, ast.ExpressionStatement)        
         self._test_infix_expression(body_stmt.expression, "x", "+", "y")
 
-    def test_function_parameter_parsing(self):
+    def test_function_parameter_parsing(self) -> None:
         Case = namedtuple("Case", ["source", "expected_params"])
-        tests = [
-            Case("fn() {};", []),
-            Case("fn(x) {};", ["x"]),
-            Case("fn(x, y, z) {};", ["x", "y", "z"])]
+        tests = [Case("fn() {};", []),
+                 Case("fn(x) {};", ["x"]),
+                 Case("fn(x, y, z) {};", ["x", "y", "z"])]
 
         for test in tests:
             program = self._setup_program(test.source)
-            stmt = program.statements[0]
+            stmt = cast(ast.ExpressionStatement, program.statements[0])
             self.assertIsInstance(stmt, ast.ExpressionStatement)
-            function = stmt.expression
+            function = cast(ast.FunctionLiteral, stmt.expression)
             self.assertIsInstance(function, ast.FunctionLiteral)
             self.assertEqual(len(test.expected_params),
                              len(function.parameters))
             for i, ident in enumerate(test.expected_params):
                 self._test_literal_expression(function.parameters[i], ident)
 
-    def test_call_expression_parsing(self):
+    def test_call_expression_parsing(self) -> None:
         source = "add(1, 2 * 3, 4 + 5);"
         program = self._setup_program(source)
         self.assertEqual(len(program.statements), 1)
-        stmt = program.statements[0]
+        stmt = cast(ast.ExpressionStatement, program.statements[0])
         self.assertIsInstance(stmt, ast.ExpressionStatement)
-        expr = stmt.expression
+        expr = cast(ast.Expression, stmt.expression)
         self.assertIsInstance(expr, ast.CallExpression)
-        self._test_identifier(expr.function, "add")
-        self.assertEqual(len(expr.arguments), 3)
-        self._test_literal_expression(expr.arguments[0], 1)
-        self._test_infix_expression(expr.arguments[1], 2, "*", 3)
-        self._test_infix_expression(expr.arguments[2], 4, "+", 5)
+        call_expr = cast(ast.CallExpression, expr)
+        self._test_identifier(call_expr.function, "add")
+        self.assertEqual(len(call_expr.arguments), 3)
+        self._test_literal_expression(call_expr.arguments[0], 1)
+        self._test_infix_expression(call_expr.arguments[1], 2, "*", 3)
+        self._test_infix_expression(call_expr.arguments[2], 4, "+", 5)
 
-    def test_call_expression_parameter_parsing(self):
+    def test_call_expression_parameter_parsing(self) -> None:
         Case = namedtuple(
             "Case", ["source", "expected_ident", "expected_args"])
-        tests = [
-            Case("add();", "add", []),
-            Case("add(1);", "add", [1]),
-            Case("add(1, 2 * 3, 4 + 5);", "add", ["1", "(2 * 3)", "(4 + 5)"])]
+        tests = [Case("add();", "add", []),
+                 Case("add(1);", "add", [1]),
+                 Case("add(1, 2 * 3, 4 + 5);", "add", ["1", "(2 * 3)", "(4 + 5)"])]
 
         for test in tests:
             program = self._setup_program(test.source)
             self.assertEqual(len(program.statements), 1)
-            stmt = program.statements[0]
+            stmt = cast(ast.ExpressionStatement, program.statements[0])
             self.assertIsInstance(stmt, ast.ExpressionStatement)
-            expr = stmt.expression
+            expr = cast(ast.CallExpression, stmt.expression)
             self.assertIsInstance(expr, ast.CallExpression)
             self._test_identifier(expr.function, test.expected_ident)
             self.assertEqual(len(expr.arguments), len(test.expected_args))
             for i, arg in enumerate(test.expected_args):
                 self.assertEqual(arg, test.expected_args[i])
 
-    def test_string_literal_expression(self):
+    def test_string_literal_expression(self) -> None:
         source = '"Hello world"'
         program = self._setup_program(source)
-        stmt = program.statements[0]
+        stmt = cast(ast.ExpressionStatement, program.statements[0])
         self.assertIsInstance(stmt, ast.ExpressionStatement)
-        literal = stmt.expression
+        literal = cast(ast.StringLiteral, stmt.expression)
         self.assertIsInstance(literal, ast.StringLiteral)
         self.assertEqual(literal.value, "Hello world")
 
-    def test_parsing_array_literals(self):
+    def test_parsing_array_literals(self) -> None:
         source = "[1, 2 * 2, 3 + 3]"
         program = self._setup_program(source)
-        stmt = program.statements[0]
+        stmt = cast(ast.ExpressionStatement, program.statements[0])
         self.assertIsInstance(stmt, ast.ExpressionStatement)
-        array = stmt.expression
+        array = cast(ast.ArrayLiteral, stmt.expression)
         self.assertIsInstance(array, ast.ArrayLiteral)
         self.assertEqual(len(array.elements), 3)
         self._test_integer_literal(array.elements[0], 1)
         self._test_infix_expression(array.elements[1], 2, "*", 2)
         self._test_infix_expression(array.elements[2], 3, "+", 3)
 
-    def test_parsing_index_expression(self):
+    def test_parsing_index_expression(self) -> None:
         source = "myArray[1 + 1]"
         program = self._setup_program(source)
-        stmt = program.statements[0]
+        stmt = cast(ast.ExpressionStatement, program.statements[0])
         self.assertIsInstance(stmt, ast.ExpressionStatement)
-        index_expr = stmt.expression
+        index_expr = cast(ast.IndexExpression, stmt.expression)
         self.assertIsInstance(index_expr, ast.IndexExpression)
         self._test_identifier(index_expr.left, "myArray")
         self._test_infix_expression(index_expr.index, 1, "+", 1)
 
-    def test_parsing_hash_literals_string_keys(self):
+    def test_parsing_hash_literals_string_keys(self) -> None:
         source = '{"one": 1, "two": 2, "three": 3}'
         program = self._setup_program(source)
-        stmt = program.statements[0]
+        stmt = cast(ast.ExpressionStatement, program.statements[0])
         self.assertIsInstance(stmt, ast.ExpressionStatement)
-        hash_literal = stmt.expression
+        hash_literal = cast(ast.HashLiteral, stmt.expression)
         self.assertIsInstance(hash_literal, ast.HashLiteral)
         self.assertEqual(len(hash_literal.pairs), 3)
         expected = {
@@ -361,23 +373,23 @@ class ParserTests(unittest.TestCase):
             expected_value = expected[key.string()]
             self._test_integer_literal(value, expected_value)
 
-    def test_parsing_empty_hash_literal(self):
+    def test_parsing_empty_hash_literal(self) -> None:
         source = "{}"
         program = self._setup_program(source)
-        stmt = program.statements[0]
+        stmt = cast(ast.ExpressionStatement, program.statements[0])
         self.assertIsInstance(stmt, ast.ExpressionStatement)
-        hash_literal = stmt.expression
+        hash_literal = cast(ast.HashLiteral, stmt.expression)
         self.assertIsInstance(hash_literal, ast.HashLiteral)
         self.assertEqual(len(hash_literal.pairs), 0)
 
     # TODO: verify with parser_test.go that we include all TestParserHash tests
 
-    def test_parsing_hash_literals_with_expressions(self):
+    def test_parsing_hash_literals_with_expressions(self) -> None:
         source = '{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}'
         program = self._setup_program(source)
-        stmt = program.statements[0]
+        stmt = cast(ast.ExpressionStatement, program.statements[0])
         self.assertIsInstance(stmt, ast.ExpressionStatement)
-        hash_literal = stmt.expression
+        hash_literal = cast(ast.HashLiteral, stmt.expression)
         self.assertIsInstance(hash_literal, ast.HashLiteral)
         self.assertEqual(len(hash_literal.pairs), 3)
         expected = {

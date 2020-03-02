@@ -1,10 +1,10 @@
-from typing import Dict
+from typing import Dict, Optional, Tuple
 
 
 class Environment:
-    def __init__(self):
-        self._store: Dict[str, "Object"] = {}
-        self.outer: Environment = None
+    def __init__(self) -> None:        
+        self._store: Dict[str, "monkey_object.MonkeyObject"] = {}
+        self.outer: Optional[Environment] = None
 
     @staticmethod
     def new_enclosed_environment(outer: "Environment") -> "Environment":
@@ -12,7 +12,7 @@ class Environment:
         env.outer = outer
         return env
 
-    def get(self, name: str) -> "Optional[(Object, bool)]":
+    def get(self, name: str) -> "Optional[monkey_object.MonkeyObject]":
         found = name in self._store.keys()
         obj = None
         if found:
@@ -22,9 +22,11 @@ class Environment:
             # name, we recursively call get on enclosing environment (which the
             # current environment is extending) until either name is found or
             # caller can issue a "unknown identifier" error.
-            obj, found = self.outer.get(name)
-        return obj, found
+            obj = self.outer.get(name)
+        return obj
 
-    def set(self, name: str, value: "Object") -> "Object":
+    def set(self, name: str, value: "monkey_object.MonkeyObject") -> "monkey_object.MonkeyObject":
         self._store[name] = value
         return value
+
+import monkey_object

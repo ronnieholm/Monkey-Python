@@ -46,13 +46,13 @@ class TokenType(Enum):
 
 
 class Token:
-    def __init__(self, type_: TokenType, literal: str):
+    def __init__(self, type_: TokenType, literal: str) -> None:
         self.type_ = type_
         self.literal = literal
 
 
 class Lexer:
-    def __init__(self, source: str):
+    def __init__(self, source: str) -> None:
         self._source = source
         self._position = 0       # Where last character was read
         self._read_position = 0  # Where next character is read

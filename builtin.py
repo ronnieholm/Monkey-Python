@@ -1,8 +1,8 @@
-from typing import List, Union, NewType, Callable, Dict
+from typing import List, Union, NewType, Callable, Dict, cast
 import monkey_object
 
 
-def _len(args: List[monkey_object.MonkeyObject]) -> Union[monkey_object.Integer, monkey_object.Error]:
+def _len(args: List[monkey_object.MonkeyObject]) -> monkey_object.MonkeyObject:
     if len(args) != 1:
         return monkey_object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
     if isinstance(args[0], monkey_object.String):
@@ -18,32 +18,32 @@ def _first(args: List[monkey_object.MonkeyObject]) -> monkey_object.MonkeyObject
         return monkey_object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
     if args[0].type_() != monkey_object.ObjectType.ARRAY:
         return monkey_object.Error(f"argument to 'first' must be ARRAY. Got {args[0].type_().value}")
-    array = args[0]
+    array = cast(monkey_object.Array, args[0])
     if len(array.elements) > 0:
         return array.elements[0]
     return Evaluator.null
 
 
-def _last(args: List[monkey_object.Array]) -> monkey_object.MonkeyObject:
+def _last(args: List[monkey_object.MonkeyObject]) -> monkey_object.MonkeyObject:
     from evaluator import Evaluator
     if len(args) != 1:
         return monkey_object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
     if args[0].type_() != monkey_object.ObjectType.ARRAY:
         return monkey_object.Error(f"argument to 'last' must be ARRAY. Got {args[0].type_().value}")
-    array = args[0]
+    array = cast(monkey_object.Array, args[0])
     length = len(array.elements)
     if length > 0:
         return array.elements[length - 1]
     return Evaluator.null
 
 
-def _rest(args: List[monkey_object.Array]) -> monkey_object.MonkeyObject:
+def _rest(args: List[monkey_object.MonkeyObject]) -> monkey_object.MonkeyObject:
     from evaluator import Evaluator
     if len(args) != 1:
         return monkey_object.Error(f"wrong number of arguments. Got {len(args)}, want 1")
     if args[0].type_() != monkey_object.ObjectType.ARRAY:
         return monkey_object.Error(f"argument to 'rest' must be ARRAY. Got {args[0].type_().value}")
-    array = args[0]
+    array = cast(monkey_object.Array, args[0])
     length = len(array.elements)
     if length > 0:
         new_elements = array.elements[1:].copy()
@@ -51,12 +51,12 @@ def _rest(args: List[monkey_object.Array]) -> monkey_object.MonkeyObject:
     return Evaluator.null
 
 
-def _push(args: List[monkey_object.Array]) -> monkey_object.MonkeyObject:
+def _push(args: List[monkey_object.MonkeyObject]) -> monkey_object.MonkeyObject:
     if len(args) != 2:
         return monkey_object.Error(f"wrong number of arguments. Got {len(args)}, want 2")
     if args[0].type_() != monkey_object.ObjectType.ARRAY:
         return monkey_object.Error(f"argument to 'push' must be ARRAY. Got {args[0].type_().value}")
-    array = args[0]
+    array = cast(monkey_object.Array, args[0])
     # Monkey arrays are immutable so we must clone the underlying Python type
     new_elements = array.elements.copy()
     new_elements.append(args[1])
@@ -71,10 +71,7 @@ def _puts(args: List[monkey_object.MonkeyObject]) -> monkey_object.MonkeyObject:
     return Evaluator.null
 
 
-BuiltinFunction = NewType(
-    "BuiltinFunction", Callable[[monkey_object.MonkeyObject], monkey_object.MonkeyObject])
-
-builtins: Dict[str, BuiltinFunction] = {
+builtins: Dict[str, monkey_object.Builtin] = {
     "len": monkey_object.Builtin(_len),
     "first": monkey_object.Builtin(_first),
     "last": monkey_object.Builtin(_last),

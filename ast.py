@@ -1,5 +1,5 @@
 from abc import ABC, abstractclassmethod
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 from functools import reduce
 from lexer import Token
 
@@ -17,41 +17,41 @@ class Node(ABC):
 
 
 class Statement(Node):
-    def __init__(self, token: Token):
+    def __init__(self, token: Token) -> None:
         self.token = token
 
-    def token_literal(self) -> Optional[str]:
+    def token_literal(self) -> str:
         return self.token.literal
 
-    def string(self):
+    def string(self) -> str:
         return self.token.literal
 
 
 class Expression(Node):
-    def __init__(self, token: Token):
+    def __init__(self, token: Token) -> None:
         self.token = token
 
-    def token_literal(self) -> Optional[str]:
+    def token_literal(self) -> str:
         return self.token.literal
 
-    def string(self):
+    def string(self) -> str:
         return self.token.literal
 
 
 class Program(Node):
-    def __init__(self, statements=None):
+    def __init__(self, statements: List[Union[Statement, Expression]]) -> None:
         self.statements = statements or []
 
     def token_literal(self) -> str:
         stmts = self.statements
-        return stmts[0].token_literal if len(stmts) > 0 else ""
+        return stmts[0].token_literal() if len(stmts) > 0 else ""
 
     def string(self) -> str:
         return reduce(lambda a, b: a + b.string(), self.statements, "")
 
 
 class Identifier(Expression):
-    def __init__(self, token: Token, value: str):
+    def __init__(self, token: Token, value: str) -> None:
         super(Identifier, self).__init__(token)
         self.value = value
 
@@ -60,7 +60,7 @@ class Identifier(Expression):
 
 
 class LetStatement(Statement):
-    def __init__(self, token: Token, name: Identifier, value: Expression):
+    def __init__(self, token: Token, name: Identifier, value: Expression) -> None:
         super(LetStatement, self).__init__(token)
         self.name = name
         self.value = value
@@ -78,7 +78,7 @@ class LetStatement(Statement):
 
 
 class ReturnStatement(Statement):
-    def __init__(self, token: Token, return_value: Expression):
+    def __init__(self, token: Token, return_value: Expression) -> None:
         super(ReturnStatement, self).__init__(token)
         self.return_value = return_value
 
@@ -90,7 +90,7 @@ class ReturnStatement(Statement):
 
 
 class ExpressionStatement(Expression):
-    def __init__(self, token: Token, expression: Expression):
+    def __init__(self, token: Token, expression: Expression) -> None:
         super(ExpressionStatement, self).__init__(token)
         self.expression = expression
 
@@ -100,13 +100,13 @@ class ExpressionStatement(Expression):
 
 
 class IntegerLiteral(Expression):
-    def __init__(self, token: Token, value: int):
+    def __init__(self, token: Token, value: int) -> None:
         super(IntegerLiteral, self).__init__(token)
         self.value = value
 
 
 class PrefixExpression(Expression):
-    def __init__(self, token: Token, operator: str, right: Expression):
+    def __init__(self, token: Token, operator: str, right: Expression) -> None:
         super(PrefixExpression, self).__init__(token)
         self.operator = operator
         self.right = right
@@ -116,7 +116,7 @@ class PrefixExpression(Expression):
 
 
 class InfixExpression(Expression):
-    def __init__(self, token: Token, left: Expression, operator: str, right: Expression):
+    def __init__(self, token: Token, left: Expression, operator: str, right: Expression) -> None:
         super(InfixExpression, self).__init__(token)
 
         # Object being accessed is an expression as it can be an identifier, an
@@ -130,13 +130,13 @@ class InfixExpression(Expression):
 
 
 class Boolean(Expression):
-    def __init__(self, token: Token, value: bool):
+    def __init__(self, token: Token, value: bool) -> None:
         super(Boolean, self).__init__(token)
         self.value = value
 
 
 class BlockStatement(Statement):
-    def __init__(self, token: Token, statements: List[Statement]):
+    def __init__(self, token: Token, statements: List[Union[Statement, Expression]]) -> None:
         super(BlockStatement, self).__init__(token)
         self.statements = statements or []
 
@@ -145,7 +145,7 @@ class BlockStatement(Statement):
 
 
 class IfExpression(Expression):
-    def __init__(self, token: Token, condition: Expression, consequence: BlockStatement, alternative: BlockStatement):
+    def __init__(self, token: Token, condition: Expression, consequence: BlockStatement, alternative: Optional[BlockStatement]) -> None:
         super(IfExpression, self).__init__(token)
         self.condition = condition
         self.consequence = consequence
@@ -159,7 +159,7 @@ class IfExpression(Expression):
 
 
 class FunctionLiteral(Expression):
-    def __init__(self, token: Token, parameters: List[Identifier], body: BlockStatement):
+    def __init__(self, token: Token, parameters: List[Identifier], body: BlockStatement) -> None:
         super(FunctionLiteral, self).__init__(token)
         self.parameters = parameters
         self.body = body
@@ -170,7 +170,7 @@ class FunctionLiteral(Expression):
 
 
 class CallExpression(Expression):
-    def __init__(self, token: Token, function: Expression, arguments: List[Expression]):
+    def __init__(self, token: Token, function: Expression, arguments: List[Expression]) -> None:
         super(CallExpression, self).__init__(token)
         self.function = function
         self.arguments = arguments or []
@@ -181,13 +181,13 @@ class CallExpression(Expression):
 
 
 class StringLiteral(Expression):
-    def __init__(self, token: Token, value: str):
+    def __init__(self, token: Token, value: str) -> None:
         super(StringLiteral, self).__init__(token)
         self.value = value
 
 
 class ArrayLiteral(Expression):
-    def __init__(self, token: Token, elements: List[Expression]):
+    def __init__(self, token: Token, elements: List[Expression]) -> None:
         super(ArrayLiteral, self).__init__(token)
         self.elements = elements
 
@@ -197,7 +197,7 @@ class ArrayLiteral(Expression):
 
 
 class IndexExpression(Expression):
-    def __init__(self, token: Token, left: Expression, index: Expression):
+    def __init__(self, token: Token, left: Expression, index: Expression) -> None:
         super(IndexExpression, self).__init__(token)
         self.left = left
         self.index = index
@@ -209,11 +209,12 @@ class IndexExpression(Expression):
 class HashLiteral(Expression):
     from monkey_object import MonkeyObject
 
-    def __init__(self, token: Token, pairs: Dict[MonkeyObject, MonkeyObject]):
+    def __init__(self, token: Token, pairs: Dict[Expression, Expression]) -> None:
         super(HashLiteral, self).__init__(token)
         self.pairs = pairs
 
     def string(self) -> str:
-        pairs = map(
-            lambda p: f"{p[0].string()}: {p[1].string()}", self.pairs.items())
+        pairs = []
+        for k, v in self.pairs.items():
+            pairs.append(f"{k.string()}: {v.string()}")
         return f"{{{', '.join(pairs)}}}"

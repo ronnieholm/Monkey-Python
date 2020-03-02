@@ -4,7 +4,7 @@ from lexer import Token, TokenType
 
 
 class AstTest(unittest.TestCase):
-    def test_string(self):
+    def test_string(self) -> None:
         program = Program([
             LetStatement(
                 Token(TokenType.LET, "let"),
