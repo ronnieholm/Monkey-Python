@@ -144,6 +144,28 @@ class Parser:
         # ExpressionStatement.
         return self._parse_expression_statement()
 
+    def _parse_let_statement(self) -> Optional[ast.LetStatement]:
+        token = self._current_token
+        if not self._expect_peek(TokenType.IDENT):
+            return None
+        name = ast.Identifier(self._current_token, self._current_token.literal)
+        if not self._expect_peek(TokenType.ASSIGN):
+            return None
+        self._next_token()
+        value = self._parse_expression(PrecedenceLevel.LOWEST)
+
+        # Type checker would be satisfied if we added "assert value is not None"
+        # following a call to a parser retuning Optional. assert, however,
+        # terminates the program on None when what we want, whenever a
+        # sub-parser such as _parse_expression() returns None, is to bubble up
+        # None to _parse_program() so it can skip adding the statement to the
+        # AST.
+        if value is None:
+            return None
+        if self._peek_token_is(TokenType.SEMICOLON):
+            self._next_token()
+        return ast.LetStatement(token, name, value)
+
     def _parse_expression_statement(self) -> Optional[ast.ExpressionStatement]:
         token = self._current_token
 
@@ -373,28 +395,6 @@ class Parser:
         if right is None:
             return None
         return ast.InfixExpression(token, left, token.literal, right)
-
-    def _parse_let_statement(self) -> Optional[ast.LetStatement]:
-        token = self._current_token
-        if not self._expect_peek(TokenType.IDENT):
-            return None
-        name = ast.Identifier(self._current_token, self._current_token.literal)
-        if not self._expect_peek(TokenType.ASSIGN):
-            return None
-        self._next_token()
-        value = self._parse_expression(PrecedenceLevel.LOWEST)
-
-        # Type checker would be satisfied if we added "assert value is not None"
-        # following a call to a parser retuning Optional. assert, however,
-        # terminates the program on None when what we want, whenever a
-        # sub-parser such as _parse_expression() returns None, is to bubble up
-        # None to _parse_program() so it can skip adding the statement to the
-        # AST.
-        if value is None:
-            return None
-        if self._peek_token_is(TokenType.SEMICOLON):
-            self._next_token()
-        return ast.LetStatement(token, name, value)
 
     def _parse_boolean(self) -> Optional[ast.Boolean]:
         if self._current_token is None:
