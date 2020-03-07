@@ -115,15 +115,15 @@ class Parser:
         while not self._current_token_is(TokenType.EOF):
             stmt = self._parse_statement()
 
-            # Many ParseX() methods return null which bubbles up the call stack
-            # to here where null enables continued parsing on error. The
-            # alternative would be for ParseX() methods to immediately stop
-            # parsing and signal a parser error. But that wouldn't allow
-            # collecting multiple errors to improve the user experience. Instead
-            # parsing would halt on the first error. As an example, ExpectPeek()
+            # Many _parse_x() return null which bubbles up the call stack to
+            # here where null enables continued parsing on error. The
+            # alternative would be for _parse_x() to immediately stop parsing
+            # and signal a parser error. But that wouldn't allow collecting
+            # multiple errors to improve the user experience. Instead parsing
+            # would halt on the first error. As an example, _expect_peek()
             # returns null if the expected token isn't found _and_ adds an error
-            # message to the Errors collection. That null bubbles up to
-            # ParseStatement() which skips adding the statement to the AST and
+            # message to the _errors list. That null bubbles up to
+            # _parse_statement() which skips adding the statement to the AST and
             # moves on the next statement. Evaluation of the AST shouldn't be
             # attempted in case of parser errors as the faulting parts of the
             # program is missing from the AST, likely resulting in evaluation
