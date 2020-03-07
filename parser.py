@@ -114,6 +114,20 @@ class Parser:
         stmts = []
         while not self._current_token_is(TokenType.EOF):
             stmt = self._parse_statement()
+
+            # Many ParseX() methods return null which bubbles up the call stack
+            # to here where null enables continued parsing on error. The
+            # alternative would be for ParseX() methods to immediately stop
+            # parsing and signal a parser error. But that wouldn't allow
+            # collecting multiple errors to improve the user experience. Instead
+            # parsing would halt on the first error. As an example, ExpectPeek()
+            # returns null if the expected token isn't found _and_ adds an error
+            # message to the Errors collection. That null bubbles up to
+            # ParseStatement() which skips adding the statement to the AST and
+            # moves on the next statement. Evaluation of the AST shouldn't be
+            # attempted in case of parser errors as the faulting parts of the
+            # program is missing from the AST, likely resulting in evaluation
+            # errors.
             if stmt is not None:
                 stmts.append(stmt)
             self._next_token()
@@ -135,7 +149,8 @@ class Parser:
 
         # Pass in lowest precedence level since we haven't parsed anything yet.
         expression = self._parse_expression(PrecedenceLevel.LOWEST)
-        assert expression is not None
+        if expression is None:
+            return None
 
         # Expression statements end with optional semicolon.
         if self._peek_token_is(TokenType.SEMICOLON):
@@ -148,7 +163,8 @@ class Parser:
             self._no_prefix_parse_fn_error(self._current_token.type_)
             return None
         left_expr = self._prefix_parse_fns[type_]()
-        assert left_expr is not None
+        if left_expr is None:
+            return None
 
         # precedence.value is what the Pratt paper refers to as right-binding
         # power and _peek_precedence is what it refers to as left-binding power.
@@ -162,7 +178,8 @@ class Parser:
                 return left_expr
             self._next_token()
             left_expr = self._infix_parse_fns[peek](left_expr)
-            assert left_expr is not None
+            if left_expr is None:
+                return None
         return left_expr
 
     def _parse_identifier(self) -> Optional[ast.Identifier]:
@@ -209,13 +226,15 @@ class Parser:
             return list_
         self._next_token()
         expr = self._parse_expression(PrecedenceLevel.LOWEST)
-        assert expr is not None
+        if expr is None:
+            return None
         list_.append(expr)
         while self._peek_token_is(TokenType.COMMA):
             self._next_token()
             self._next_token()
             expr = self._parse_expression(PrecedenceLevel.LOWEST)
-            assert expr is not None
+            if expr is None:
+                return None
             list_.append(expr)
         if not self._expect_peek(end):
             return None
@@ -224,7 +243,8 @@ class Parser:
     def _parse_array_literal(self) -> Optional[ast.ArrayLiteral]:
         token = self._current_token
         elements = self._parse_expression_list(TokenType.RBRACKET)
-        assert elements is not None
+        if elements is None:
+            return None
         return ast.ArrayLiteral(token, elements)
 
     def _parse_hash_literal(self) -> Optional[ast.HashLiteral]:
@@ -233,12 +253,14 @@ class Parser:
         while not self._peek_token_is(TokenType.RBRACE):
             self._next_token()
             key = self._parse_expression(PrecedenceLevel.LOWEST)
-            assert key is not None
+            if key is None:
+                return None
             if not self._expect_peek(TokenType.COLON):
                 return None
             self._next_token()
             value = self._parse_expression(PrecedenceLevel.LOWEST)
-            assert value is not None
+            if value is None:
+                return None
             pairs[key] = value
             if not self._peek_token_is(TokenType.RBRACE) and not self._expect_peek(TokenType.COMMA):
                 return None
@@ -259,7 +281,8 @@ class Parser:
             return None
         self._next_token()
         condition = self._parse_expression(PrecedenceLevel.LOWEST)
-        assert condition is not None
+        if condition is None:
+            return None
         if not self._expect_peek(TokenType.RPAREN):
             return None
         if not self._expect_peek(TokenType.LBRACE):
@@ -289,7 +312,8 @@ class Parser:
         if not self._expect_peek(TokenType.LPAREN):
             return None
         parameters = self._parse_function_parameters()
-        assert parameters is not None
+        if parameters is None:
+            return None
         if not self._expect_peek(TokenType.LBRACE):
             return None
         body = self._parse_block_statement()
@@ -298,14 +322,16 @@ class Parser:
     def _parse_call_expression(self, function: ast.Expression) -> Optional[ast.CallExpression]:
         token = self._current_token
         arguments = self._parse_expression_list(TokenType.RPAREN)
-        assert arguments is not None
+        if arguments is None:
+            return None
         return ast.CallExpression(token, function, arguments)
 
     def _parse_index_expression(self, left: ast.Expression) -> Optional[ast.IndexExpression]:
         token = self._current_token
         self._next_token()
         index = self._parse_expression(PrecedenceLevel.LOWEST)
-        assert index is not None
+        if index is None:
+            return None
         if not self._expect_peek(TokenType.RBRACKET):
             return None
         return ast.IndexExpression(token, left, index)
@@ -317,13 +343,15 @@ class Parser:
             return args
         self._next_token()
         expr = self._parse_expression(PrecedenceLevel.LOWEST)
-        assert expr is not None
+        if expr is None:
+            return None
         args.append(expr)
         while self._peek_token_is(TokenType.COMMA):
             self._next_token()
             self._next_token()
             expr = self._parse_expression(PrecedenceLevel.LOWEST)
-            assert expr is not None
+            if expr is None:
+                return None
             args.append(expr)
         if not self._expect_peek(TokenType.RPAREN):
             return None
@@ -333,7 +361,8 @@ class Parser:
         token = self._current_token
         self._next_token()
         right = self._parse_expression(PrecedenceLevel.PREFIX)
-        assert right is not None
+        if right is None:
+            return None
         return ast.PrefixExpression(token, token.literal, right)
 
     def _parse_infix_expression(self, left: ast.Expression) -> Optional[ast.InfixExpression]:
@@ -341,7 +370,8 @@ class Parser:
         precedence = self._current_precedence()
         self._next_token()
         right = self._parse_expression(precedence)
-        assert right is not None
+        if right is None:
+            return None
         return ast.InfixExpression(token, left, token.literal, right)
 
     def _parse_let_statement(self) -> Optional[ast.LetStatement]:
@@ -353,7 +383,15 @@ class Parser:
             return None
         self._next_token()
         value = self._parse_expression(PrecedenceLevel.LOWEST)
-        assert value is not None
+
+        # Type checker would be satisfied if we added "assert value is not None"
+        # following a call to a parser retuning Optional. assert, however,
+        # terminates the program on None when what we want, whenever a
+        # sub-parser such as _parse_expression() returns None, is to bubble up
+        # None to _parse_program() so it can skip adding the statement to the
+        # AST.
+        if value is None:
+            return None
         if self._peek_token_is(TokenType.SEMICOLON):
             self._next_token()
         return ast.LetStatement(token, name, value)
@@ -367,7 +405,8 @@ class Parser:
         token = self._current_token
         self._next_token()
         return_value = self._parse_expression(PrecedenceLevel.LOWEST)
-        assert return_value is not None
+        if return_value is None:
+            return None
         if self._peek_token_is(TokenType.SEMICOLON):
             self._next_token()
         return ast.ReturnStatement(token, return_value)

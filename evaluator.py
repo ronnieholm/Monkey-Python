@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, cast
+from typing import List, Dict, cast
 import ast
 import environment
 import monkey_object
@@ -13,7 +13,7 @@ class Evaluator:
     false = monkey_object.Boolean(False)
 
     def eval(self, node: ast.Node,
-             env: environment.Environment) -> Optional[monkey_object.MonkeyObject]:
+             env: environment.Environment) -> monkey_object.MonkeyObject:
         # statements
         if isinstance(node, ast.Program):
             return self._eval_program(cast(List[ast.BlockStatement], node.statements), env)
@@ -24,13 +24,6 @@ class Evaluator:
         if isinstance(node, ast.ReturnStatement):
             value = self.eval(node.return_value, env)
 
-            # We want to assert rather than "if value is None: return None".
-            # While the latter also satisfies mypy, we'd lose track of where the
-            # None originated. eval would end up returning None with no hint as
-            # to which downstream method it originated from, making debugging
-            # difficult. The type checker understands assert statement.
-            assert value is not None
-
             # Check for errors whenever Eval is called inside Eval in order to
             # stop errors from being passed around and bubbling up far from
             # their origin.
@@ -39,7 +32,6 @@ class Evaluator:
             return monkey_object.ReturnValue(value)
         if isinstance(node, ast.LetStatement):
             value = self.eval(node.value, env)
-            assert value is not None
             if self._is_error(value):
                 return value
             return env.set(node.name.value, value)
@@ -53,17 +45,14 @@ class Evaluator:
             return self._native_bool_to_boolean_object(node.value)
         if isinstance(node, ast.PrefixExpression):
             right = self.eval(node.right, env)
-            assert right is not None
             if self._is_error(right):
                 return right
             return self._eval_prefix_expression(node.operator, right)
         if isinstance(node, ast.InfixExpression):
             left = self.eval(node.left, env)
-            assert left is not None
             if self._is_error(left):
                 return left
             right = self.eval(node.right, env)
-            assert right is not None
             if self._is_error(right):
                 return right
             return self._eval_infix_expression(node.operator, left, right)
@@ -77,27 +66,22 @@ class Evaluator:
             return monkey_object.Function(params, body, env)
         if isinstance(node, ast.CallExpression):
             function = self.eval(node.function, env)
-            assert function is not None
             if self._is_error(function):
                 return function
             args = self._eval_expressions(node.arguments, env)
-            assert args is not None
             if len(args) == 1 and self._is_error(args[0]):
                 return args[0]
             return self._apply_function(function, args)
         if isinstance(node, ast.ArrayLiteral):
             elements = self._eval_expressions(node.elements, env)
-            assert elements is not None
             if len(elements) == 1 and self._is_error(elements[0]):
                 return elements[0]
             return monkey_object.Array(elements)
         if isinstance(node, ast.IndexExpression):
             left = self.eval(node.left, env)
-            assert left is not None
             if self._is_error(left):
                 return left
             index = self.eval(node.index, env)
-            assert index is not None
             if self._is_error(index):
                 return index
             return self._eval_index_expression(left, index)
@@ -107,12 +91,10 @@ class Evaluator:
         raise NotImplementedError
 
     def _apply_function(self, function: monkey_object.MonkeyObject,
-                        args: List[monkey_object.MonkeyObject]) -> \
-                        Optional[monkey_object.MonkeyObject]:
+                        args: List[monkey_object.MonkeyObject]) -> monkey_object.MonkeyObject:
         if isinstance(function, monkey_object.Function):
             extended_env = self._extend_function_environment(function, args)
             evaluated = self.eval(function.body, extended_env)
-            assert evaluated is not None
             return self._unwrap_return_value(evaluated)
         if isinstance(function, monkey_object.Builtin):
             return function.function(args)
@@ -135,9 +117,8 @@ class Evaluator:
         return obj.value if isinstance(obj, monkey_object.ReturnValue) else obj
 
     def _eval_program(self, stmts: List[ast.BlockStatement],
-                      env: environment.Environment) -> \
-                      Optional[monkey_object.MonkeyObject]:
-        result = None
+                      env: environment.Environment) -> monkey_object.MonkeyObject:
+        result: monkey_object.MonkeyObject = Evaluator.null
         for stmt in stmts:
             result = self.eval(stmt, env)
 
@@ -153,9 +134,8 @@ class Evaluator:
         return result
 
     def _eval_block_statement(self, stmts: List[ast.Statement],
-                              env: environment.Environment) -> \
-                              Optional[monkey_object.MonkeyObject]:
-        result = None
+                              env: environment.Environment) -> monkey_object.MonkeyObject:
+        result: monkey_object.MonkeyObject = Evaluator.null
         for stmt in stmts:
             result = self.eval(stmt, env)
             if result is not None:
@@ -262,10 +242,8 @@ class Evaluator:
         return monkey_object.String(left_val + right_val)
 
     def _eval_if_expression(self, expr: ast.IfExpression,
-                            env: environment.Environment) -> \
-                            Optional[monkey_object.MonkeyObject]:
+                            env: environment.Environment) -> monkey_object.MonkeyObject:
         condition = self.eval(expr.condition, env)
-        assert condition is not None
         if self._is_error(condition):
             return condition
         if self._is_truthy(condition):
@@ -284,8 +262,7 @@ class Evaluator:
         return monkey_object.Error(f"identifier not found: {node.value}")
 
     def _eval_expressions(self, exprs: List[ast.Expression],
-                          env: environment.Environment) -> \
-                          Optional[List[monkey_object.MonkeyObject]]:
+                          env: environment.Environment) -> List[monkey_object.MonkeyObject]:
         result = []
 
         # By definition arguments are evaluated left to right. Since the side
@@ -293,7 +270,6 @@ class Evaluator:
         # of the next, defining an explicit evaluation order is important.
         for expr in exprs:
             evaluated = self.eval(expr, env)
-            assert evaluated is not None
             if self._is_error(evaluated):
                 return [evaluated]
             result.append(evaluated)
@@ -332,11 +308,10 @@ class Evaluator:
         return expr.pairs[index.hash_key()].value
 
     def _eval_hash_literal(self, node: ast.HashLiteral,
-                           env: environment.Environment) -> Optional[monkey_object.MonkeyObject]:
+                           env: environment.Environment) -> monkey_object.MonkeyObject:
         pairs: Dict[monkey_object.HashKey, monkey_object.HashPair] = {}
         for key_node, value_node in node.pairs.items():
             key = self.eval(key_node, env)
-            assert key is not None
             if self._is_error(key):
                 return key
             if not isinstance(key, monkey_object.Hashable):
