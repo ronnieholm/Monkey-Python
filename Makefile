@@ -1,10 +1,15 @@
-default: mypy pylint test repl
+default: mypy pylint test coverage repl
 
 repl:
 	python3 main.py
 
 test:
 	python3 -m unittest *test.py
+	coverage html
+
+coverage:
+	coverage run -m unittest *test.py
+
 
 mypy:
 	# Or use --strict, a superset of --disallow-untyped-defs
