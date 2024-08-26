@@ -1,5 +1,5 @@
 import unittest
-from ast import Program, LetStatement, Identifier
+from mast import Program, LetStatement, Identifier
 from lexer import Token, TokenType
 
 

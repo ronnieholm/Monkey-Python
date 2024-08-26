@@ -1,9 +1,9 @@
 from enum import Enum, unique
-from abc import abstractclassmethod
+from abc import abstractmethod
 from typing import List, Dict, Callable
 import hashlib
 from collections import namedtuple
-import ast
+import mast
 from environment import Environment
 
 
@@ -35,17 +35,17 @@ HashKey = namedtuple("HashKey", ["type", "value"])
 
 
 class Hashable:
-    @abstractclassmethod
+    @abstractmethod
     def hash_key(cls) -> HashKey:
         raise NotImplementedError
 
 
 class MonkeyObject:
-    @abstractclassmethod
+    @abstractmethod
     def type_(cls) -> ObjectType:
         raise NotImplementedError
 
-    @abstractclassmethod
+    @abstractmethod
     def inspect(cls) -> str:
         raise NotImplementedError
 
@@ -138,7 +138,7 @@ class Error(MonkeyObject):
 
 
 class Function(MonkeyObject):
-    def __init__(self, parameters: List[ast.Identifier], body: ast.BlockStatement,
+    def __init__(self, parameters: List[mast.Identifier], body: mast.BlockStatement,
                  env: Environment) -> None:
         self.parameters = parameters
         self.body = body

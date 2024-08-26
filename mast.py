@@ -1,16 +1,16 @@
-from abc import ABC, abstractclassmethod
+from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Union
 from functools import reduce
 from lexer import Token
 
 
 class Node(ABC):
-    @abstractclassmethod
+    @abstractmethod
     def token_literal(cls) -> Optional[str]:
         # For debugging and testing.
         raise NotImplementedError
 
-    @abstractclassmethod
+    @abstractmethod
     def string(cls) -> str:
         # We don't override __str__ or __repr__ to make string calls explicit.
         raise NotImplementedError

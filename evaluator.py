@@ -1,5 +1,5 @@
 from typing import List, Dict, cast
-import ast
+import mast
 import environment
 import monkey_object
 import builtin
@@ -12,16 +12,16 @@ class Evaluator:
     true = monkey_object.Boolean(True)
     false = monkey_object.Boolean(False)
 
-    def eval(self, node: ast.Node,
+    def eval(self, node: mast.Node,
              env: environment.Environment) -> monkey_object.MonkeyObject:
         # statements
-        if isinstance(node, ast.Program):
-            return self._eval_program(cast(List[ast.BlockStatement], node.statements), env)
-        if isinstance(node, ast.ExpressionStatement):
+        if isinstance(node, mast.Program):
+            return self._eval_program(cast(List[mast.BlockStatement], node.statements), env)
+        if isinstance(node, mast.ExpressionStatement):
             return self.eval(node.expression, env)
-        if isinstance(node, ast.BlockStatement):
-            return self._eval_block_statement(cast(List[ast.Statement], node.statements), env)
-        if isinstance(node, ast.ReturnStatement):
+        if isinstance(node, mast.BlockStatement):
+            return self._eval_block_statement(cast(List[mast.Statement], node.statements), env)
+        if isinstance(node, mast.ReturnStatement):
             value = self.eval(node.return_value, env)
 
             # Check for errors whenever Eval is called inside Eval in order to
@@ -30,25 +30,25 @@ class Evaluator:
             if self._is_error(value):
                 return value
             return monkey_object.ReturnValue(value)
-        if isinstance(node, ast.LetStatement):
+        if isinstance(node, mast.LetStatement):
             value = self.eval(node.value, env)
             if self._is_error(value):
                 return value
             return env.set(node.name.value, value)
 
         # expressions
-        if isinstance(node, ast.IntegerLiteral):
+        if isinstance(node, mast.IntegerLiteral):
             return monkey_object.Integer(node.value)
-        if isinstance(node, ast.StringLiteral):
+        if isinstance(node, mast.StringLiteral):
             return monkey_object.String(node.value)
-        if isinstance(node, ast.Boolean):
+        if isinstance(node, mast.Boolean):
             return self._native_bool_to_boolean_object(node.value)
-        if isinstance(node, ast.PrefixExpression):
+        if isinstance(node, mast.PrefixExpression):
             right = self.eval(node.right, env)
             if self._is_error(right):
                 return right
             return self._eval_prefix_expression(node.operator, right)
-        if isinstance(node, ast.InfixExpression):
+        if isinstance(node, mast.InfixExpression):
             left = self.eval(node.left, env)
             if self._is_error(left):
                 return left
@@ -56,15 +56,15 @@ class Evaluator:
             if self._is_error(right):
                 return right
             return self._eval_infix_expression(node.operator, left, right)
-        if isinstance(node, ast.IfExpression):
+        if isinstance(node, mast.IfExpression):
             return self._eval_if_expression(node, env)
-        if isinstance(node, ast.Identifier):
+        if isinstance(node, mast.Identifier):
             return self._eval_identifier(node, env)
-        if isinstance(node, ast.FunctionLiteral):
+        if isinstance(node, mast.FunctionLiteral):
             params = node.parameters
             body = node.body
             return monkey_object.Function(params, body, env)
-        if isinstance(node, ast.CallExpression):
+        if isinstance(node, mast.CallExpression):
             function = self.eval(node.function, env)
             if self._is_error(function):
                 return function
@@ -72,12 +72,12 @@ class Evaluator:
             if len(args) == 1 and self._is_error(args[0]):
                 return args[0]
             return self._apply_function(function, args)
-        if isinstance(node, ast.ArrayLiteral):
+        if isinstance(node, mast.ArrayLiteral):
             elements = self._eval_expressions(node.elements, env)
             if len(elements) == 1 and self._is_error(elements[0]):
                 return elements[0]
             return monkey_object.Array(elements)
-        if isinstance(node, ast.IndexExpression):
+        if isinstance(node, mast.IndexExpression):
             left = self.eval(node.left, env)
             if self._is_error(left):
                 return left
@@ -85,7 +85,7 @@ class Evaluator:
             if self._is_error(index):
                 return index
             return self._eval_index_expression(left, index)
-        if isinstance(node, ast.HashLiteral):
+        if isinstance(node, mast.HashLiteral):
             return self._eval_hash_literal(node, env)
 
         raise NotImplementedError
@@ -116,7 +116,7 @@ class Evaluator:
         # functions.
         return obj.value if isinstance(obj, monkey_object.ReturnValue) else obj
 
-    def _eval_program(self, stmts: List[ast.BlockStatement],
+    def _eval_program(self, stmts: List[mast.BlockStatement],
                       env: environment.Environment) -> monkey_object.MonkeyObject:
         result: monkey_object.MonkeyObject = Evaluator.null
         for stmt in stmts:
@@ -133,7 +133,7 @@ class Evaluator:
                 return result
         return result
 
-    def _eval_block_statement(self, stmts: List[ast.Statement],
+    def _eval_block_statement(self, stmts: List[mast.Statement],
                               env: environment.Environment) -> monkey_object.MonkeyObject:
         result: monkey_object.MonkeyObject = Evaluator.null
         for stmt in stmts:
@@ -241,7 +241,7 @@ class Evaluator:
         right_val = right.value
         return monkey_object.String(left_val + right_val)
 
-    def _eval_if_expression(self, expr: ast.IfExpression,
+    def _eval_if_expression(self, expr: mast.IfExpression,
                             env: environment.Environment) -> monkey_object.MonkeyObject:
         condition = self.eval(expr.condition, env)
         if self._is_error(condition):
@@ -252,7 +252,7 @@ class Evaluator:
             return self.eval(expr.alternative, env)
         return Evaluator.null
 
-    def _eval_identifier(self, node: ast.Identifier, env: environment.Environment) -> \
+    def _eval_identifier(self, node: mast.Identifier, env: environment.Environment) -> \
                          monkey_object.MonkeyObject:
         value = env.get(node.value)
         if value is not None:
@@ -261,7 +261,7 @@ class Evaluator:
             return builtin.builtins[node.value]
         return monkey_object.Error(f"identifier not found: {node.value}")
 
-    def _eval_expressions(self, exprs: List[ast.Expression],
+    def _eval_expressions(self, exprs: List[mast.Expression],
                           env: environment.Environment) -> List[monkey_object.MonkeyObject]:
         result = []
 
@@ -275,7 +275,7 @@ class Evaluator:
             result.append(evaluated)
         return result
 
-    def _eval_index_expression(self, left: monkey_object.MonkeyObject,
+    def _eval_index_expression(self, left,
                                index: monkey_object.MonkeyObject) -> \
                                monkey_object.MonkeyObject:
         if left.type_() == monkey_object.ObjectType.ARRAY and \
@@ -298,7 +298,7 @@ class Evaluator:
             return Evaluator.null
         return array.elements[idx]
 
-    def _eval_hash_index_expression(self, expr: monkey_object.MonkeyObject,
+    def _eval_hash_index_expression(self, expr: monkey_object.Hash,
                                     index: monkey_object.MonkeyObject) -> \
                                     monkey_object.MonkeyObject:
         if not isinstance(index, monkey_object.Hashable):
@@ -307,7 +307,7 @@ class Evaluator:
             return Evaluator.null
         return expr.pairs[index.hash_key()].value
 
-    def _eval_hash_literal(self, node: ast.HashLiteral,
+    def _eval_hash_literal(self, node: mast.HashLiteral,
                            env: environment.Environment) -> monkey_object.MonkeyObject:
         pairs: Dict[monkey_object.HashKey, monkey_object.HashPair] = {}
         for key_node, value_node in node.pairs.items():

@@ -1,5 +1,4 @@
 {
-    "python.pythonPath": "venv/bin/python3",
     "python.testing.unittestArgs": [
         "-v",
         "-s",
@@ -8,11 +7,6 @@
         "*_test.py"
     ],
     "python.testing.pytestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
+    "python.testing.autoTestDiscoverOnSaveEnabled": true,
     "python.testing.unittestEnabled": true,
-    "python.linting.enabled": true,
-    "python.linting.lintOnSave": true,
-    "python.linting.pylintEnabled": true,
-    "python.linting.pylintArgs": ["--rcfile=pylintrc"],
-    "python.linting.mypyEnabled": true
 }
