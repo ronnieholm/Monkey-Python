@@ -275,13 +275,14 @@ class Evaluator:
             result.append(evaluated)
         return result
 
-    def _eval_index_expression(self, left,
+    def _eval_index_expression(self, left: monkey_object.MonkeyObject,
                                index: monkey_object.MonkeyObject) -> \
                                monkey_object.MonkeyObject:
         if left.type_() == monkey_object.ObjectType.ARRAY and \
            index.type_() == monkey_object.ObjectType.INTEGER:
             return self._eval_array_index_expression(left, index)
         if left.type_() == monkey_object.ObjectType.HASH:
+            assert isinstance(left, monkey_object.Hash)
             return self._eval_hash_index_expression(left, index)
         return monkey_object.Error(f"index operator not supported: {left.type_().value}")
 
