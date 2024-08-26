@@ -8,3 +8,4 @@ disable=missing-module-docstring,
     too-many-statements,
     cyclic-import,
     too-many-return-statements
+load-plugins=pylint.extensions.no_self_use

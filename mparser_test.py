@@ -1,8 +1,8 @@
 from typing import cast, Union, Any
 from collections import namedtuple
-import mast
 import unittest
-from parser import Parser
+import mast
+from mparser import Parser
 from lexer import Lexer
 
 

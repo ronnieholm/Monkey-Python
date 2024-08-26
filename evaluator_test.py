@@ -1,7 +1,7 @@
 import unittest
 from collections import namedtuple
 from typing import Dict, cast
-from parser import Parser
+from mparser import Parser
 from lexer import Lexer
 import monkey_object
 import environment

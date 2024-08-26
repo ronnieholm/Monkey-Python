@@ -124,7 +124,7 @@ class Lexer:
         return tok
 
     def _skip_whitespace(self) -> None:
-        while self._char == " " or self._char == "\t" or self._char == "\n" or self._char == "\r":
+        while self._char in (' ', '\t', '\n', '\r'):
             self._read_char()
 
     def _read_char(self) -> None:

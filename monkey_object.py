@@ -36,17 +36,17 @@ HashKey = namedtuple("HashKey", ["type", "value"])
 
 class Hashable:
     @abstractmethod
-    def hash_key(cls) -> HashKey:
+    def hash_key(self) -> HashKey:
         raise NotImplementedError
 
 
 class MonkeyObject:
     @abstractmethod
-    def type_(cls) -> ObjectType:
+    def type_(self) -> ObjectType:
         raise NotImplementedError
 
     @abstractmethod
-    def inspect(cls) -> str:
+    def inspect(self) -> str:
         raise NotImplementedError
 
 

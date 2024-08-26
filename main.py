@@ -1,7 +1,7 @@
 from typing import List
 import getpass
 import sys
-from parser import Parser
+from mparser import Parser
 from lexer import Lexer
 from evaluator import Evaluator
 from environment import Environment
@@ -34,7 +34,7 @@ def start() -> None:
             if len(line) == 0:
                 continue
         else:
-            with open(sys.argv[1], "r") as file:
+            with open(sys.argv[1], "r", encoding="utf-8") as file:
                 line = file.read()
 
         lexer = Lexer(line)

@@ -13,7 +13,7 @@ class Environment:
         return env
 
     def get(self, name: str) -> "Optional[monkey_object.MonkeyObject]":
-        found = name in self._store.keys()
+        found = name in self._store
         obj = None
         if found:
             obj = self._store[name]
